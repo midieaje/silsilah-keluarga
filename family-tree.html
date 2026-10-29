@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silsilah Keluarga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e8ede8; --paper:#fbfcfa; --ink:#1b2a29; --mute:#66756f; --hair:#d3dbd5;
+  --accent:#1f4d4a; --accent-2:#173a38; --L:#2f7f95; --P:#8d4f86;
+  --ring:#c4902c; --line:#8da09c; --danger:#a8382f;
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--body);color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+
+/* ---------- Buttons ---------- */
+.btn{border:1px solid var(--hair);background:var(--paper);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-2)}
+.btn.danger{color:var(--danger);border-color:#e3c3bf}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.btn[disabled]{opacity:.55;cursor:default}
+.icon-btn{width:36px;height:36px;padding:0;justify-content:center;font-size:18px;line-height:1}
+
+/* ---------- Login ---------- */
+#login{min-height:100%;display:grid;place-items:center;padding:24px}
+.login-card{width:100%;max-width:400px;background:var(--paper);border:1px solid var(--hair);border-radius:18px;padding:32px 28px;box-shadow:0 20px 50px -30px rgba(20,50,45,.5)}
+.login-card h1{font-family:var(--display);font-size:30px;line-height:1.1;margin:14px 0 6px;letter-spacing:-.01em}
+.login-card p{margin:0 0 20px;color:var(--mute)}
+.login-card label{display:block;font-weight:600;font-size:13px;margin-bottom:6px}
+.login-card input{width:100%;padding:11px 12px;border:1px solid var(--hair);border-radius:10px;background:#fff;margin-bottom:14px}
+.login-card .btn{width:100%;justify-content:center;padding:11px}
+.login-err{color:var(--danger);font-size:13px;min-height:18px;margin:-6px 0 10px}
+.demo-note{margin-top:18px;padding:12px;border-radius:10px;background:#f3ead4;font-size:13px;color:#5b4a1d}
+.demo-note .btn{margin-top:10px}
+.rings{display:block}
+
+/* ---------- App shell ---------- */
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 16px;background:var(--paper);border-bottom:1px solid var(--hair)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin-right:6px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1}
+.tools select,.tools input[type=search]{padding:7px 10px;border:1px solid var(--hair);border-radius:9px;background:#fff;max-width:200px}
+.spacer{flex:1}
+.role{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:#dfe9e4;color:var(--accent)}
+.role.edit{background:#f3e6c4;color:#7a5712}
+
+#viewport{flex:1;overflow:auto;position:relative;cursor:grab;
+  background-color:var(--bg);
+  background-image:radial-gradient(#c9d3cd 1px,transparent 1px);background-size:22px 22px}
+#viewport.pan{cursor:grabbing;user-select:none}
+#zoomwrap{margin:0 auto;position:relative}
+#stage{position:relative;transform-origin:0 0}
+#lines{position:absolute;left:0;top:0;overflow:visible}
+#cards{position:absolute;inset:0;pointer-events:none}
+
+/* ---------- Cards ---------- */
+.card{position:absolute;width:148px;height:134px;background:var(--paper);border:1px solid var(--hair);border-top:4px solid var(--L);
+  border-radius:10px;padding:9px 8px 6px;text-align:center;cursor:pointer;pointer-events:auto;
+  box-shadow:0 8px 16px -12px rgba(20,50,45,.55)}
+.card.L{background:#dcedf4;border-color:#98c3d3;border-top-color:var(--L)}
+.card.P{background:#f4e1f0;border-color:#d3a8ca;border-top-color:var(--P)}
+.card.spouse{border-style:dashed;border-top-style:solid}
+.card.lin{border-bottom:5px solid var(--lc)}
+.card .gm{position:absolute;right:8px;top:5px;font-size:14px;font-weight:700;line-height:1}
+.card.L .gm{color:var(--L)}.card.P .gm{color:var(--P)}
+.card.L .ph{background:#b7d7e4}.card.P .ph{background:#e6c6de}
+.card.ghost{background:rgba(255,255,255,.55);border-style:dashed;border-top-style:solid}
+.card.ghost .ph{opacity:.55}
+.card.ghost .yr{font-style:italic}
+.card .up{position:absolute;right:8px;top:24px;font-size:14px;color:var(--mute);line-height:1;cursor:pointer}
+.card .qb{position:absolute;left:6px;width:26px;height:26px;padding:0;border:1px solid var(--hair);border-radius:8px;background:rgba(255,255,255,.85);color:var(--accent);font-size:12px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.card .qa{top:6px}.card .qd{top:36px}
+.card .qx{left:auto;right:6px;top:auto;bottom:6px;font-size:16px;font-weight:700}
+.card .qb:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.card .qb.on{background:var(--ring);border-color:var(--ring);color:#fff}
+.legend{font-size:12px;color:var(--mute);white-space:nowrap}
+@media(max-width:820px){.legend{display:none}}
+.card:hover{filter:brightness(.97)}
+.mg-list{width:100%;padding:6px;border:1px solid var(--hair);border-radius:9px;background:#fff}
+code{background:#e3ece7;padding:2px 8px;border-radius:6px;font-weight:600;letter-spacing:.05em;font-size:14px}
+.bt{display:flex;gap:6px;flex-wrap:wrap}
+.nav{position:relative}
+#nav-btn{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.navpanel{position:fixed;z-index:60;width:min(460px,94vw);max-height:70vh;overflow:auto;background:var(--paper);border:1px solid var(--hair);border-radius:14px;box-shadow:0 24px 60px -24px rgba(10,30,28,.55);padding:8px}
+.nvh{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:2px 2px 8px;border-bottom:1px solid var(--hair);margin-bottom:6px;position:sticky;top:-8px;background:var(--paper);z-index:1}
+.nvh .spc{flex:1}
+.nv{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 4px;border-radius:8px}
+.nv:hover{background:#eef3ef}
+.tg{width:24px;height:24px;border:0;background:#e3ece7;border-radius:6px;cursor:pointer;font-size:12px;color:var(--accent);flex:none;line-height:1;padding:0}
+.tg.sp0{background:none;cursor:default}
+.nn,.ns{border:0;background:none;cursor:pointer;padding:3px 6px;border-radius:7px;font-weight:600;font-size:14px;text-align:left}
+.nn:hover,.ns:hover{background:#dbe7e0;text-decoration:underline}
+.nn.cur{background:#dbe7e0}
+.ns{font-weight:500;color:var(--P)}
+.nv.P .gs{color:var(--P)}.nv.L .gs{color:var(--L)}
+.gs{font-size:13px;font-weight:700}
+.spw{font-size:13px;color:var(--mute);display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap}
+.gn{font-size:11px;color:var(--mute);margin-left:auto;white-space:nowrap}
+.rw{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.rw .rn{flex:1 1 150px;width:auto;padding:8px 10px;border:1px solid var(--hair);border-radius:9px;background:#fff}
+.rw .ry{width:92px;padding:8px 10px;border:1px solid var(--hair);border-radius:9px;background:#fff}
+.rw .seg{flex:none}
+.rw .seg-o span{padding:7px 12px;min-width:46px}
+.rx{border:0;background:none;color:var(--mute);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px}
+.rx:hover{background:#e6eee9}
+.dg{display:block;border:1px solid var(--hair);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;cursor:pointer}
+.dg .dgh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:600}
+.dg .dgl{font-size:13px;color:#3f4f4b;margin:6px 0 0 26px;font-weight:400}
+.dg .dgl div{padding:1px 0}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
+.pill.ok{background:#dcebd5;color:#2f5a1f}.pill.maybe{background:#f3e6c4;color:#7a5712}
+.note{background:#eef3ef;border-radius:10px;padding:10px 12px;font-size:13px;color:#3f4f4b;margin-bottom:12px}
+.card.hit{outline:3px solid var(--ring);outline-offset:2px}
+.ph{width:56px;height:56px;border-radius:50%;margin:0 auto 6px;overflow:hidden;background:#dbe4de;display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:19px;color:var(--accent)}
+.ph img{width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
+.nm{font-weight:600;font-size:13px;line-height:1.2;max-height:32px;overflow:hidden}
+.yr{font-size:12px;color:#3f4f4b;margin-top:3px}
+
+/* ---------- Lines ---------- */
+.cl{fill:none;stroke:var(--line);stroke-width:2.5}
+.lk path{fill:none;stroke-width:2.5;stroke-dasharray:7 5}
+.ml{fill:none;stroke:var(--mc,var(--ring));stroke-width:2.5}
+.ml.cerai{stroke-dasharray:6 5}
+.band{fill:var(--mc);fill-opacity:.09;stroke:var(--mc);stroke-opacity:.5;stroke-width:1.5}
+.mk{cursor:pointer}
+.mk .bg{fill:var(--bg);stroke:none}
+.mk circle.r{fill:none;stroke:var(--mc,var(--ring));stroke-width:2.2}
+.mk:hover circle.r{stroke-width:3.2}
+.mk .hit{fill:transparent;stroke:none}
+.mk.single .dot{fill:var(--mc,var(--line));stroke:none}
+
+/* ---------- Empty ---------- */
+#empty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center}
+#empty .box{max-width:380px}
+#empty h2{font-family:var(--display);font-size:26px;margin:14px 0 6px}
+#empty p{color:var(--mute);margin:0 0 18px}
+#empty .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- Modal ---------- */
+#mb{position:fixed;inset:0;background:rgba(15,32,30,.5);display:grid;place-items:center;padding:16px;z-index:50}
+#modal{background:var(--paper);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px;padding:22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
+.mh{display:flex;gap:16px;align-items:center;margin-bottom:14px;position:relative}
+.mh h2{font-family:var(--display);font-size:24px;line-height:1.15;margin:0}
+.mh .sub{color:var(--mute);font-size:13px;margin-top:2px}
+.bigph{width:84px;height:84px;border-radius:50%;overflow:hidden;background:#dbe4de;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:28px;color:var(--accent);flex:none;border:3px solid var(--L)}
+.bigph.P{border-color:var(--P);background:#e6c6de}
+.bigph.L{background:#b7d7e4}
+.bigph img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.x{position:absolute;right:-6px;top:-8px;border:0;background:none;font-size:20px;cursor:pointer;color:var(--mute);padding:6px}
+dl.info{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;margin:0 0 14px}
+dl.info dt{color:var(--mute);font-size:13px}
+dl.info dd{margin:0}
+.sec{border-top:1px solid var(--hair);padding-top:12px;margin-top:12px}
+.sec h3{font-family:var(--display);font-size:16px;margin:0 0 8px}
+.mrow{padding:10px 12px;border:1px solid var(--hair);border-radius:10px;margin-bottom:8px;background:#fff}
+.mrow .t{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font-size:12px;color:var(--mute)}
+.kids{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;background:#e6eee9;color:var(--accent);font-size:13px;cursor:pointer;text-decoration:none}
+.chip:hover{background:#d6e4dc}
+a.lnk{color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.acts .grow{flex:1}
+
+form .g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form .f{margin-bottom:12px}
+form .f.full{grid-column:1/-1}
+form label{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+form input[type=text],form input[type=number],form select,form textarea{width:100%;padding:9px 11px;border:1px solid var(--hair);border-radius:9px;background:#fff}
+form textarea{min-height:70px;resize:vertical}
+form .hint{font-size:12px;color:var(--mute);margin-top:3px}
+.seg{display:flex;border:1px solid var(--hair);border-radius:9px;overflow:hidden;background:#fff}
+form .seg-o{flex:1;margin:0;font-weight:500;font-size:14px;position:relative;cursor:pointer}
+.seg-o input{position:absolute;opacity:0;pointer-events:none}
+.seg-o span{display:block;padding:9px 8px;text-align:center}
+.seg-o+.seg-o span{border-left:1px solid var(--hair)}
+.seg-o input[value=L]:checked+span{background:var(--L);color:#fff}
+.seg-o input[value=P]:checked+span{background:var(--P);color:#fff}
+.seg-o input:focus-visible+span{outline:3px solid var(--ring);outline-offset:-3px}
+.photo-row{display:flex;gap:14px;align-items:center}
+.photo-row .bigph{border-color:var(--hair)}
+.newp{padding:12px;border:1px dashed var(--line);border-radius:10px;margin-bottom:12px;background:#f3f6f2}
+.err{color:var(--danger);font-size:13px;margin:8px 0 0;min-height:18px}
+@media(max-width:520px){form .g{grid-template-columns:1fr}dl.info{grid-template-columns:90px 1fr}}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:99;max-width:90vw}
+#toast.bad{background:var(--danger)}
+@media print{.topbar,#toast{display:none}#viewport{overflow:visible}#app{height:auto}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="login-card">
+    <svg class="rings" width="46" height="30" viewBox="0 0 46 30" aria-hidden="true"><circle cx="16" cy="15" r="11" fill="none" stroke="#c4902c" stroke-width="3"/><circle cx="30" cy="15" r="11" fill="none" stroke="#1f4d4a" stroke-width="3"/></svg>
+    <h1 id="login-title">Silsilah Keluarga</h1>
+    <p>Masukkan password yang dibagikan oleh pengurus keluarga.</p>
+    <form id="login-form">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <div class="login-err" id="login-err"></div>
+      <button class="btn primary" type="submit" id="login-btn">Masuk</button>
+    </form>
+    <div class="demo-note" id="demo-note" hidden>
+      Aplikasi belum terhubung ke Google Sheets (<code>CONFIG.SCRIPT_URL</code> masih kosong). Anda bisa mencoba dulu dalam Mode Demo; data hanya tersimpan di browser ini.
+      <br><button class="btn sm" id="demo-btn" type="button">Coba Mode Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="brand">
+      <svg width="34" height="22" viewBox="0 0 46 30" aria-hidden="true"><circle cx="16" cy="15" r="11" fill="none" stroke="#c4902c" stroke-width="3.5"/><circle cx="30" cy="15" r="11" fill="none" stroke="#1f4d4a" stroke-width="3.5"/></svg>
+      <span id="app-title">Silsilah Keluarga</span>
+    </div>
+    <div class="tools">
+      <div class="nav"><button class="btn sm" id="nav-btn" aria-haspopup="true" aria-expanded="false"><span id="nav-label">Seluruh keluarga</span> ▾</button><div id="nav-panel" class="navpanel" hidden role="menu"></div></div>
+      <button class="btn sm" id="back-all" hidden>← Seluruh keluarga</button>
+      <input id="search" type="search" placeholder="Cari nama…" aria-label="Cari nama">
+      <span class="legend" title="Tombol kecil di tiap kartu">▲ keluarga 1 level · ▼ keturunan · + pasangan &amp; anak</span>
+      <span class="spacer"></span>
+      <button class="btn icon-btn" id="z-out" title="Perkecil" aria-label="Perkecil">−</button>
+      <button class="btn icon-btn" id="z-in" title="Perbesar" aria-label="Perbesar">+</button>
+      <button class="btn sm" id="z-fit" title="Sesuaikan layar">Muat layar</button>
+      <button class="btn primary sm" id="add-person" hidden>+ Orang</button>
+      <button class="btn sm" id="reload" title="Muat ulang data dari Google Sheets">Muat ulang</button>
+      <button class="btn sm" id="backup" title="Unduh cadangan data (.json)">Cadangan</button>
+      <button class="btn sm" id="restore" title="Pulihkan data, atau gabungkan pohon keluarga lain dari file cadangannya (.json)" hidden>Pulihkan / Gabung</button>
+      <button class="btn sm" id="dups" title="Cari orang yang sama (nama sama) dan gabungkan sekaligus" hidden>Cari duplikat</button>
+      <input type="file" id="restore-file" accept=".json,application/json" hidden>
+      <span class="role" id="role"></span>
+      <button class="btn sm" id="logout">Keluar</button>
+    </div>
+  </div>
+  <div id="viewport">
+    <div id="zoomwrap"><div id="stage"><svg id="lines"></svg><div id="cards"></div></div></div>
+    <div id="empty" hidden>
+      <div class="box">
+        <svg width="64" height="40" viewBox="0 0 46 30" aria-hidden="true"><circle cx="16" cy="15" r="11" fill="none" stroke="#c4902c" stroke-width="3"/><circle cx="30" cy="15" r="11" fill="none" stroke="#1f4d4a" stroke-width="3"/></svg>
+        <h2>Silsilah masih kosong</h2>
+        <p id="empty-p">Mulai dengan menambahkan leluhur tertua yang Anda ketahui. Pasangan dan anak ditambahkan dari kartu masing-masing orang.</p>
+        <div class="row" id="empty-actions">
+          <button class="btn primary" id="empty-add">Tambah orang pertama</button>
+          <button class="btn" id="empty-seed">Isi contoh data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mb" hidden><div id="modal" role="dialog" aria-modal="true"></div></div>
+<div id="toast" hidden></div>
+
+<script>
+/* =====================================================================
+   PENGATURAN — isi SCRIPT_URL dengan URL aplikasi web Google Apps Script
+   (berakhiran /exec). Kosongkan untuk Mode Demo (data disimpan di browser).
+   ===================================================================== */
+const CONFIG = {
+  SCRIPT_URL: "",
+  TITLE: "Silsilah Keluarga"
+};
+
+/* ---------- Util ---------- */
+// Penyimpanan sesi yang tetap aman bila browser memblokir sessionStorage (mis. saat disematkan di Google Sites)
+const MEM = {};
+const ss = {
+  get: k => { try { return sessionStorage.getItem(k); } catch (e) { return MEM[k] || null; } },
+  set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) { MEM[k] = v; } },
+  del: k => { try { sessionStorage.removeItem(k); } catch (e) { delete MEM[k]; } }
+};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const yr = s => { const m = String(s || '').match(/\d{4}/); return m ? m[0] : ''; };
+const PCOLS = ['id','nama','gender','lahir','wafat','tempat','catatan','foto','parent_nikah_id','kode'];
+const MCOLS = ['id','p1','p2','tahun','status','catatan'];
+const normP = r => { const o = {}; PCOLS.forEach(c => o[c] = r[c] == null ? '' : String(r[c])); if (o.gender !== 'P') o.gender = 'L'; return o; };
+const normM = r => { const o = {}; MCOLS.forEach(c => o[c] = r[c] == null ? '' : String(r[c])); if (!o.status) o.status = 'menikah'; return o; };
+/* ---------- Kode unik orang ---------- */
+const CODE_CH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const parseCodes = s => [...new Set(String(s || '').toUpperCase().split(/[\/,;\s]+/).map(x => x.replace(/[^A-Z0-9_-]/g, '')).filter(Boolean))];
+const unionCodes = (...arrs) => [...new Set(arrs.flat())];
+const autoCode = p => String(p.id).replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(-5) || 'X';
+const codesOf = p => { const c = parseCodes(p.kode); return c.length ? c : [autoCode(p)]; };
+const codeStr = p => codesOf(p).join('/');
+const normKey = n => String(n || '').toLowerCase().replace(/\s+/g, ' ').trim();
+function newCode() {
+  const used = new Set(state.orang.flatMap(codesOf)); let c;
+  do { c = ''; for (let i = 0; i < 5; i++) c += CODE_CH[Math.floor(Math.random() * CODE_CH.length)]; } while (used.has(c));
+  return c;
+}
+const STATUS = { menikah: 'Menikah', cerai: 'Bercerai', wafat: 'Pasangan wafat' };
+
+/* ---------- State ---------- */
+const state = { orang: [], nikah: [], role: 'view', mode: 'demo', pw: '', focus: 'all', zoom: 1, fit: true, hit: new Set(), q: '', exp: new Set() };
+let IDX = {}, POS = {}, DIM = { w: 0, h: 0 };
+
+function reindex() {
+  IDX.p = new Map(state.orang.map(p => [p.id, p]));
+  IDX.m = new Map(state.nikah.map(m => [m.id, m]));
+  IDX.marr = new Map();
+  state.nikah.forEach(m => {
+    const ids = new Set([m.p1, m.p2].filter(id => id && IDX.p.has(id)));
+    ids.forEach(id => { if (!IDX.marr.has(id)) IDX.marr.set(id, []); IDX.marr.get(id).push(m); });
+  });
+  IDX.marr.forEach(a => a.sort((x, y) => (parseInt(x.tahun) || 9999) - (parseInt(y.tahun) || 9999)));
+  IDX.kids = new Map();
+  state.orang.forEach(p => {
+    if (IDX.m.has(p.parent_nikah_id)) {
+      if (!IDX.kids.has(p.parent_nikah_id)) IDX.kids.set(p.parent_nikah_id, []);
+      IDX.kids.get(p.parent_nikah_id).push(p);
+    }
+  });
+  IDX.kids.forEach(a => a.sort((x, y) => (+yr(x.lahir) || 9999) - (+yr(y.lahir) || 9999)));
+}
+const nm = id => (IDX.p.get(id) || {}).nama || '?';
+const marrTitle = m => `${nm(m.p1)} ♥ ${m.p2 ? nm(m.p2) : '(pasangan tidak tercatat)'}`;
+const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const photoHTML = p => p.foto ? `<img src="${esc(p.foto)}" alt="" referrerpolicy="no-referrer" loading="lazy">` : esc(initials(p.nama));
+function lifeText(p) {
+  const b = yr(p.lahir), d = yr(p.wafat);
+  if (b && d) return `${b} – ${d}`;
+  if (b) return p.wafat ? `${b} – †` : `l. ${b}`;
+  if (d) return `† ${d}`;
+  return p.wafat ? '†' : '';
+}
+function descendants(id) {
+  const out = new Set(), q = [id];
+  while (q.length) {
+    const x = q.pop();
+    (IDX.marr.get(x) || []).forEach(m => (IDX.kids.get(m.id) || []).forEach(k => { if (!out.has(k.id)) { out.add(k.id); q.push(k.id); } }));
+  }
+  return out;
+}
+
+/* ---------- Penyimpanan ---------- */
+const DEMO_KEY = 'ft_demo_v1';
+const Demo = {
+  load() { try { const j = JSON.parse(localStorage.getItem(DEMO_KEY) || '{}'); state.orang = (j.orang || []).map(normP); state.nikah = (j.nikah || []).map(normM); } catch (e) { state.orang = []; state.nikah = []; } },
+  save() { try { localStorage.setItem(DEMO_KEY, JSON.stringify({ orang: state.orang, nikah: state.nikah })); } catch (e) { throw new Error('Penyimpanan browser penuh (foto terlalu banyak).'); } }
+};
+
+async function api(action, payload = {}) {
+  let res;
+  try {
+    // Tanpa header Content-Type agar tidak memicu preflight CORS (Apps Script tidak mendukungnya)
+    res = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, password: state.pw, ...payload }) });
+  } catch (e) { throw new Error('Tidak dapat terhubung ke Google Sheets. Periksa koneksi & URL skrip.'); }
+  let j;
+  try { j = await res.json(); } catch (e) { throw new Error('Respons server tidak valid. Pastikan deployment diatur "Siapa saja" dan URL berakhiran /exec.'); }
+  if (!j.ok) throw new Error(j.error || 'Terjadi kesalahan');
+  return j;
+}
+
+function applyOps(ops) {
+  ops.forEach(o => {
+    const list = o.t === 'orang' ? state.orang : state.nikah;
+    const id = o.op === 'delete' ? o.id : o.row.id;
+    const i = list.findIndex(r => r.id === id);
+    if (o.op === 'delete') { if (i >= 0) list.splice(i, 1); }
+    else { const row = o.t === 'orang' ? normP(o.row) : normM(o.row); if (i >= 0) list[i] = row; else list.push(row); }
+  });
+}
+async function commit(ops) {
+  const snap = JSON.stringify({ o: state.orang, n: state.nikah });
+  applyOps(ops); render();
+  try {
+    if (state.mode === 'remote') { for (let i = 0; i < ops.length; i += 40) await api('batch', { ops: ops.slice(i, i + 40) }); } else Demo.save();
+  } catch (e) {
+    const s = JSON.parse(snap); state.orang = s.o; state.nikah = s.n; render();
+    toast('Gagal menyimpan: ' + e.message + (ops.length > 40 ? ' Sebagian data mungkin sudah tersimpan; klik Muat ulang untuk melihat kondisi terbaru.' : ''), true);
+    throw e;
+  }
+}
+
+/* ---------- Login ---------- */
+async function loginRemote(pw) {
+  state.pw = pw;
+  const j = await api('login');
+  state.role = j.role; state.mode = 'remote';
+  state.orang = j.orang.map(normP); state.nikah = j.nikah.map(normM);
+  ss.set('ft_pw', pw);
+  enterApp();
+}
+function loginDemo() { state.mode = 'demo'; state.role = 'edit'; Demo.load(); enterApp(); }
+function enterApp() {
+  $('#login').hidden = true; $('#app').hidden = false;
+  const r = $('#role'); r.textContent = state.mode === 'demo' ? 'Mode demo' : (state.role === 'edit' ? 'Bisa mengedit' : 'Hanya melihat');
+  r.className = 'role' + (state.role === 'edit' ? ' edit' : '');
+  $('#add-person').hidden = state.role !== 'edit';
+  $('#reload').hidden = state.mode !== 'remote';
+  $('#restore').hidden = state.role !== 'edit';
+  $('#dups').hidden = state.role !== 'edit';
+  state.fit = true; render();
+}
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!CONFIG.SCRIPT_URL) { $('#login-err').textContent = 'Belum terhubung ke Google Sheets. Gunakan Mode Demo.'; return; }
+  const b = $('#login-btn'); b.disabled = true; b.textContent = 'Memeriksa…'; $('#login-err').textContent = '';
+  try { await loginRemote($('#pw').value); }
+  catch (err) { $('#login-err').textContent = err.message; }
+  finally { b.disabled = false; b.textContent = 'Masuk'; }
+});
+$('#demo-btn').onclick = loginDemo;
+$('#logout').onclick = () => { ss.del('ft_pw'); location.reload(); };
+$('#reload').onclick = async () => {
+  try { const j = await api('getAll'); state.orang = j.orang.map(normP); state.nikah = j.nikah.map(normM); render(); toast('Data dimuat ulang'); }
+  catch (e) { toast(e.message, true); }
+};
+$('#backup').onclick = () => {
+  const blob = new Blob([JSON.stringify({ orang: state.orang, nikah: state.nikah }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'silsilah-cadangan-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+$('#restore').onclick = () => $('#restore-file').click();
+$('#restore-file').onchange = e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const fr = new FileReader();
+  fr.onerror = () => toast('File tidak dapat dibaca.', true);
+  fr.onload = async () => {
+    let j;
+    try { j = JSON.parse(fr.result); } catch (err) { return toast('File bukan cadangan yang valid (JSON rusak).', true); }
+    if (!j || !Array.isArray(j.orang) || !Array.isArray(j.nikah)) return toast('File bukan cadangan silsilah (data "orang" dan "nikah" tidak ditemukan).', true);
+    const ppl = j.orang.filter(r => r && r.id && r.nama).map(normP), mar = j.nikah.filter(r => r && r.id).map(normM);
+    if (!ppl.length) return toast('Cadangan tidak berisi data orang.', true);
+    if (!confirm(`Pulihkan ${ppl.length} orang dan ${mar.length} pernikahan dari file ini?\n\nData dengan ID yang sama akan ditimpa oleh isi cadangan. Data lain yang tidak ada di cadangan tidak dihapus.\n\nJika file ini adalah pohon keluarga lain, orang yang sama di kedua pohon bisa disatukan setelahnya lewat tombol "Gabungkan dengan…" pada kartu orangnya.`)) return;
+    toast('Memulihkan data…');
+    reindex();
+    const before = new Set(state.orang.map(p => p.id));
+    ppl.forEach(r => { const ex = IDX.p.get(r.id); const u = unionCodes(parseCodes(ex && ex.kode), parseCodes(r.kode)); if (u.length) r.kode = u.join('/'); });
+    try {
+      await commit([...ppl.map(row => ({ op: 'upsert', t: 'orang', row })), ...mar.map(row => ({ op: 'upsert', t: 'nikah', row }))]);
+      state.fit = true; render();
+      const linked = await autoLinkByCode(before);
+      render(); const left = findDupGroups().length;
+      toast(`Berhasil memulihkan ${ppl.length} orang dan ${mar.length} pernikahan${linked ? `; ${linked} orang yang sama disatukan` : ''}${left ? `. Ada ${left} kemungkinan duplikat: klik "Cari duplikat"` : ''}`);
+    } catch (err) { /* toast sudah tampil */ }
+  };
+  fr.readAsText(file);
+};
+
+/* =====================================================================
+   LAYOUT POHON
+   Unit = satu orang "utama" + semua pasangannya (bisa lebih dari satu) dalam satu baris.
+   Pasangan diurutkan bergantian kiri/kanan; setiap pernikahan digambar sebagai
+   kurung di bawah kartu dan anak-anaknya menggantung dari titik tengah kurung itu.
+   ===================================================================== */
+const CW = 148, CH = 134, CG = 34, UG = 44, GG = 64, RG = 90, MX = 60, MY = 44;
+const PAL = ['#c4902c', '#4f8a3c', '#d4603f', '#4a63b8', '#a05a2c'];
+
+function topAncestors(id) {
+  const seen = new Set([id]), q = [id], tops = [];
+  while (q.length) {
+    const x = q.shift(), pm = IDX.m.get(IDX.p.get(x).parent_nikah_id);
+    if (!pm) { if (x !== id) tops.push(x); continue; }
+    [pm.p1, pm.p2].filter(Boolean).forEach(a => { if (IDX.p.has(a) && !seen.has(a)) { seen.add(a); q.push(a); } });
+  }
+  return tops;
+}
+
+const hasRel = id => (IDX.marr.get(id) || []).some(m => (m.p1 === id ? m.p2 : m.p1) || (IDX.kids.get(m.id) || []).length);
+
+function layout(focus = state.focus) {
+  const placed = new Set(), units = [];
+  // Mode "keluarga asal" / "keluarga dekat": pasangan orang lain tidak ikut diperluas
+  const asal = String(focus).startsWith('asal:'), near = String(focus).startsWith('near:') ? focus.slice(5) : null;
+  const limited = asal || !!near;
+  let selfUnit = null;
+  const genOf = {};   // generasi (baris) tempat kartu asli tiap orang
+
+  // Orang yang sudah ditampilkan di pohon lain (mis. sebagai pasangan) muncul sebagai kartu bayangan
+  // agar garis keturunan di pohon asalnya tetap utuh.
+  function ghostUnit(id, gen) {
+    const u = { ghost: true, entry: id, gen, order: [id], xc: { [id]: CW / 2 }, R: CW, groups: [], maxLevel: 0, rowOff: 0, childOff: 0, width: CW, multi: false, bandDepth: 0, maxGen: gen };
+    units.push(u); return u;
+  }
+
+  function layoutUnit(entry, gen, opt = {}) {
+    if (opt.mode === 'leaf' && state.exp.has(entry)) opt = { mode: 'open' };   // dibuka lewat tombol +
+    placed.add(entry);
+    const kids = {}, bfs = [entry], depth = { [entry]: 0 };
+    for (let i = 0; i < bfs.length; i++) {
+      const id = bfs[i];
+      if (limited && depth[id] >= (opt.mode === 'top' ? 2 : 1)) continue;
+      if (opt.mode === 'leaf') continue;
+      for (const m of IDX.marr.get(id) || []) {
+        const o = m.p1 === id ? m.p2 : m.p1;
+        if (!o || placed.has(o) || !IDX.p.has(o)) continue;
+        if (opt.allow && !opt.allow.has(o)) continue;
+        placed.add(o); (kids[id] = kids[id] || []).push(o); bfs.push(o); depth[o] = depth[id] + 1;
+      }
+    }
+    // Urutan baris kartu: pernikahan yang lebih awal di kiri, yang lebih akhir di kanan (anak-anak ikut terurut kiri→kanan).
+    // Satu pasangan: suami di kiri, istri di kanan.
+    const ord = (id, side) => {
+      const ks = kids[id] || [], first = IDX.p.get(id).gender === 'L' ? 'R' : 'L';
+      let leftL = [], rightL = [];
+      if (side === 'both') {
+        if (ks.length === 1) { (first === 'L' ? leftL : rightL).push(ks[0]); }
+        else { const h = Math.ceil(ks.length / 2); leftL = ks.slice(0, h); rightL = ks.slice(h); }
+      } else if (side === 'L') leftL = ks.slice().reverse();
+      else rightL = ks.slice();
+      const res = [];
+      leftL.forEach(c => res.push(...ord(c, 'L')));
+      res.push(id);
+      rightL.forEach(c => res.push(...ord(c, 'R')));
+      return res;
+    };
+    const order = ord(entry, 'both');
+    order.forEach(id => { genOf[id] = gen; });
+    const n = order.length, xc = {};
+    order.forEach((id, i) => xc[id] = i * (CW + CG) + CW / 2);
+    const R = n * CW + (n - 1) * CG;
+
+    const seen = new Set(), groups = [];
+    order.forEach(id => (IDX.marr.get(id) || []).forEach(m => {
+      if (seen.has(m.id)) return; seen.add(m.id);
+      if (opt.mode === 'leaf' || (opt.mode === 'top' && !opt.parents.has(m.p1) && !opt.parents.has(m.p2))) return;
+      if (limited && m.p1 !== entry && m.p2 !== entry && !(order.includes(m.p1) && order.includes(m.p2))) return;
+      const a = order.indexOf(m.p1), b = m.p2 ? order.indexOf(m.p2) : -1;
+      if (a >= 0 && b >= 0) {
+        const lo = Math.min(a, b), hi = Math.max(a, b);
+        groups.push({ m, type: 'pair', a: xc[order[lo]], b: xc[order[hi]], level: hi - lo - 1, jx: (xc[order[lo]] + xc[order[hi]]) / 2 });
+      } else {
+        const who = a >= 0 ? m.p1 : m.p2;
+        groups.push({ m, type: 'single', a: xc[who], level: 0, jx: xc[who] });
+      }
+    }));
+    groups.sort((x, y) => x.jx - y.jx || x.level - y.level);
+    groups.forEach((g, i) => { g.color = groups.length > 1 ? PAL[i % PAL.length] : null; });
+
+    const unit = { entry, gen, order, xc, R, groups, maxLevel: 0, leaf: opt.mode === 'leaf', open: opt.mode === 'open' };
+    units.push(unit);
+    if (opt.mode === 'self') selfUnit = unit;
+    groups.forEach(g => {
+      g.units = []; g.links = [];
+      (IDX.kids.get(g.m.id) || []).forEach(k => {
+        // Blok orang tua: yang dipilih tampil lengkap (dengan pasangan & anak), saudara-saudaranya hanya kartu biasa
+        if (placed.has(k.id)) {
+          // Orang ini sudah punya kartu asli di bagian lain. Jika sebaris, cukup tarik garis ke kartu aslinya (tanpa kartu ganda);
+          // jika beda baris, tampilkan kartu bayangan agar garis tidak melintasi banyak baris.
+          if (genOf[k.id] === gen + 1) g.links.push(k.id); else g.units.push(ghostUnit(k.id, gen + 1));
+          return;
+        }
+        const co = opt.mode === 'top' ? { mode: k.id === near ? 'self' : 'leaf' } : (near && (opt.mode === 'self' || opt.mode === 'open') ? { mode: 'leaf' } : {});
+        g.units.push(layoutUnit(k.id, gen + 1, co));
+      });
+      g.width = g.units.reduce((s, u) => s + u.width, 0) + UG * Math.max(0, g.units.length - 1);
+      g.depth = g.units.reduce((a, u) => Math.max(a, u.bandDepth), 0);
+      g.maxGen = g.units.reduce((a, u) => Math.max(a, u.maxGen), gen);
+      unit.maxLevel = Math.max(unit.maxLevel, g.level);
+    });
+    const wk = groups.filter(g => g.units.length);
+    const W = wk.reduce((s, g) => s + g.width, 0) + GG * Math.max(0, wk.length - 1);
+    unit.multi = wk.length >= 2;
+    unit.bandDepth = Math.max(0, ...groups.map(g => g.depth)) + (unit.multi ? 1 : 0);
+    unit.maxGen = Math.max(gen, ...groups.map(g => g.maxGen));
+    unit.width = Math.max(R, W);
+    unit.rowOff = (unit.width - R) / 2;
+    unit.childOff = (unit.width - W) / 2;
+    return unit;
+  }
+
+  function founders() {
+    const seen = new Set(), res = [];
+    [...state.orang].sort((a, b) => (+yr(a.lahir) || 9999) - (+yr(b.lahir) || 9999)).forEach(p => {
+      if (seen.has(p.id)) return;
+      const comp = [p.id]; seen.add(p.id);
+      for (let i = 0; i < comp.length; i++) (IDX.marr.get(comp[i]) || []).forEach(m => {
+        const o = m.p1 === comp[i] ? m.p2 : m.p1;
+        if (o && IDX.p.has(o) && !seen.has(o)) { seen.add(o); comp.push(o); }
+      });
+      if (comp.some(id => IDX.m.has(IDX.p.get(id).parent_nikah_id))) return;
+      let best = comp[0];
+      comp.forEach(id => { if ((IDX.marr.get(id) || []).length > (IDX.marr.get(best) || []).length) best = id; });
+      res.push(best);
+    });
+    return res;
+  }
+
+  const roots = [];
+  if (asal) {
+    const fid = focus.slice(5), tops = topAncestors(fid);
+    const compOk = t => { const comp = [t], sn = new Set(comp); for (let i = 0; i < comp.length; i++) (IDX.marr.get(comp[i]) || []).forEach(m => { const o = m.p1 === comp[i] ? m.p2 : m.p1; if (o && IDX.p.has(o) && !sn.has(o)) { sn.add(o); comp.push(o); } }); return !comp.some(x => IDX.m.has(IDX.p.get(x).parent_nikah_id)); };
+    let rs = tops.filter(compOk); if (!rs.length) rs = tops;
+    rs.sort((a, b) => (+yr(IDX.p.get(a).lahir) || 9999) - (+yr(IDX.p.get(b).lahir) || 9999));
+    rs.forEach(t => { if (!placed.has(t)) roots.push(layoutUnit(t, 0)); });
+    if (!roots.length) roots.push(layoutUnit(fid, 0));
+  } else if (near) {
+    const c = IDX.p.get(near), pm = c && IDX.m.get(c.parent_nikah_id);
+    const topOf = m => m && [m.p1, m.p2].find(x => x && IDX.p.has(x));
+    // Blok orang tua: orang tua + pasangan lain mereka, sehingga anak-anak dari pernikahan lain (saudara tiri) ikut tampil
+    const mkTop = m => {
+      const ps = [m.p1, m.p2].filter(x => x && IDX.p.has(x)), allow = new Set(ps);
+      ps.forEach(pid => (IDX.marr.get(pid) || []).forEach(mm => { const o = mm.p1 === pid ? mm.p2 : mm.p1; if (o && IDX.p.has(o)) allow.add(o); }));
+      return layoutUnit(topOf(m), 0, { mode: 'top', allow, parents: new Set(ps), parId: m.id });
+    };
+    // pasangan yang orang tuanya tercatat
+    const spouses = [...new Set((IDX.marr.get(near) || []).map(m => m.p1 === near ? m.p2 : m.p1).filter(x => x && IDX.p.has(x)))];
+    const spPar = spouses.map(id => ({ id, m: IDX.m.get(IDX.p.get(id).parent_nikah_id) })).filter(x => x.m && topOf(x.m));
+    const A = topOf(pm) ? mkTop(pm) : layoutUnit(near, spPar.length ? 1 : 0, { mode: 'self' });   // sejajarkan baris bila ada blok orang tua pasangan
+    const left = [], right = [], at = selfUnit ? selfUnit.order.indexOf(near) : 0;
+    spPar.forEach(({ id, m }) => {
+      if (placed.has(topOf(m))) return;
+      const b = mkTop(m);                                   // orang tua + saudara pasangan (pasangan tampil sebagai kartu bayangan)
+      (selfUnit && selfUnit.order.indexOf(id) < at ? left : right).push(b);
+    });
+    roots.push(...left, A, ...right);
+  } else if (focus !== 'all' && IDX.p.has(focus)) roots.push(layoutUnit(focus, 0));
+  else {
+    founders().forEach(id => { if (!placed.has(id)) roots.push(layoutUnit(id, 0)); });
+    state.orang.forEach(p => { if (!placed.has(p.id)) roots.push(layoutUnit(p.id, 0)); }); // pengaman
+  }
+
+  const place = (u, x0) => {
+    u.x0 = x0; u.cx = {};
+    u.order.forEach(id => u.cx[id] = x0 + u.rowOff + u.xc[id]);
+    let cur = x0 + u.childOff;
+    u.groups.forEach(g => {
+      if (!g.units.length) return;
+      g.x0 = cur;
+      g.units.forEach(c => { place(c, cur); cur += c.width + UG; });
+      cur += GG - UG;
+    });
+  };
+  let cursor = MX;
+  roots.forEach(r => { place(r, cursor); cursor += r.width + RG; });
+  const width = Math.max(cursor - RG + MX, 300);
+
+  const maxLv = {}; let maxGen = 0;
+  units.forEach(u => { maxLv[u.gen] = Math.max(maxLv[u.gen] || 0, u.maxLevel); maxGen = Math.max(maxGen, u.gen); });
+  const rowY = [MY];
+  for (let g = 1; g <= maxGen; g++) rowY[g] = rowY[g - 1] + CH + 20 + 16 * (maxLv[g - 1] || 0) + 84;
+  const height = rowY[maxGen] + CH + MY + 40 + 16 * (maxLv[maxGen] || 0);
+  const cxAll = {};
+  units.forEach(u => { if (!u.ghost) u.order.forEach(id => { cxAll[id] = u.cx[id]; }); });
+  return { units, rowY, width, height, maxLv, roots, cxAll };
+}
+
+/* ---------- Render ---------- */
+function render() {
+  reindex();
+  updateNavLabel();
+  const empty = !state.orang.length;
+  $('#empty').hidden = !empty;
+  $('#empty-actions').style.display = state.role === 'edit' ? '' : 'none';
+  $('#empty-seed').hidden = state.mode === 'remote';
+  if (state.role !== 'edit') $('#empty-p').textContent = 'Belum ada data silsilah. Hubungi pengurus keluarga.';
+  if (empty) { $('#lines').innerHTML = ''; $('#cards').innerHTML = ''; $('#zoomwrap').style.width = '0'; $('#zoomwrap').style.height = '0'; return; }
+
+  if (state.focus !== 'all' && !IDX.p.has(state.focus.replace(/^(asal|near):/, ''))) state.focus = 'all';
+  $('#back-all').hidden = state.focus === 'all';
+  const L = layout();
+  let svg = '', cards = ''; POS = {};
+  const LIN = {}; let bands = '';
+  L.units.forEach(u => {
+    const y = L.rowY[u.gen], yb = y + CH, base = u.x0 + u.rowOff;
+    let k = 0;
+    u.groups.forEach(g => {
+      const yJ = yb + 20 + 16 * g.level, st = g.m.status || 'menikah', jx = base + g.jx;
+      const sty = g.color ? ` style="--mc:${g.color}"` : '';
+      if (g.type === 'single' && !g.units.length && !g.links.length) return; // tidak ada pasangan & tidak ada anak: tidak perlu digambar
+      const tip = esc(marrTitle(g.m) + (g.m.tahun ? ' · ' + g.m.tahun : '') + ' · ' + (STATUS[st] || st));
+      if (g.type === 'pair') {
+        const xa = base + g.a, xb = base + g.b;
+        svg += `<path class="ml ${st}"${sty} d="M${xa} ${yb}V${yJ}H${xb}V${yb}"/>`;
+        svg += `<g class="mk ${st}"${sty} data-m="${esc(g.m.id)}" transform="translate(${jx} ${yJ})"><title>${tip}</title><rect class="bg" x="-16" y="-11" width="32" height="22" rx="11"/><circle class="r" cx="-4.5" cy="0" r="6.5"/><circle class="r" cx="4.5" cy="0" r="6.5"/></g>`;
+      } else {
+        svg += `<path class="ml ${st}"${sty} d="M${jx} ${yb}V${yJ}"/>`;
+        svg += `<g class="mk single"${sty} data-m="${esc(g.m.id)}" transform="translate(${jx} ${yJ})"><title>${tip}</title><circle class="hit" r="12"/><circle class="dot" r="5"/></g>`;
+      }
+      g.links.forEach((tid, li) => {                       // garis ke kartu asli yang berada di keluarga lain
+        const tx = L.cxAll[tid], t = IDX.p.get(tid); if (tx == null || !t) return;
+        const yt = L.rowY[u.gen + 1], cy = yt - 62 - (li % 2) * 10, col = t.gender === 'P' ? 'var(--P)' : 'var(--L)';
+        svg += `<g class="lk"><title>${esc(t.nama)} juga anak dari ${esc(marrTitle(g.m))}</title><path style="stroke:${col}" d="M${jx} ${yJ}V${cy}H${tx}V${yt - 3}"/><circle style="fill:${col}" cx="${tx}" cy="${yt - 3}" r="4.5"/></g>`;
+      });
+      if (!g.units.length) return;
+      const kk = k++;
+      if (u.multi) {
+        const pad = 10 + 8 * g.depth, top = L.rowY[u.gen + 1] - 58;
+        const bot = L.rowY[g.maxGen] + CH + 18 + 16 * (L.maxLv[g.maxGen] || 0) + pad;
+        bands += `<rect class="band"${sty} x="${g.x0 - pad}" y="${top}" width="${g.width + 2 * pad}" height="${bot - top}" rx="16"/>`;
+      }
+      g.units.forEach(c => {
+        const ck = c.cx[c.entry], yt = L.rowY[c.gen], mid = yt - 24 - (kk % 3) * 12;
+        if (g.color) LIN[c.entry] = g.color;
+        svg += `<path class="cl"${g.color ? ` style="stroke:${g.color}"` : ''} d="M${jx} ${yJ}V${mid}H${ck}V${yt}"/>`;
+      });
+    });
+    u.order.forEach(id => {
+      const p = IDX.p.get(id), left = u.cx[id] - CW / 2, lc = LIN[id];
+      if (!u.ghost) POS[id] = { x: u.cx[id], y: y + CH / 2 };
+      const par = IDX.m.get(p.parent_nikah_id);
+      const up = !u.ghost && id !== u.entry && par ? `<span class="up" title="Anak dari ${esc(nm(par.p1))}${par.p2 ? ' &amp; ' + esc(nm(par.p2)) : ''}. Klik untuk melihat keluarga asal.">↖</span>` : '';
+      const qx = !u.ghost && id === u.entry && (u.leaf || u.open) && (u.open || hasRel(id))
+        ? `<button type="button" class="qb qx${u.open ? ' on' : ''}" data-q="exp" aria-expanded="${u.open}" aria-label="${u.open ? 'Sembunyikan' : 'Tampilkan'} pasangan dan anak ${esc(p.nama)}" title="${u.open ? 'Sembunyikan' : 'Tampilkan'} pasangan dan anak">${u.open ? '−' : '+'}</button>` : '';
+      const ttl = u.ghost ? ' title="Orang ini ditampilkan di pohon pasangannya. Klik untuk membuka."' : '';
+      cards += `<div class="card ${p.gender}${id !== u.entry ? ' spouse' : ''}${u.ghost ? ' ghost' : ''}${lc ? ' lin' : ''}${state.hit.has(id) ? ' hit' : ''}" data-id="${esc(id)}" style="left:${left}px;top:${y}px${lc ? ';--lc:' + lc : ''}" tabindex="0"${ttl}>
+        <button type="button" class="qb qa${state.focus === 'near:' + id ? ' on' : ''}" data-q="near" aria-label="Keluarga 1 level ${esc(p.nama)}" title="Keluarga 1 level: orang tua, saudara kandung &amp; tiri, pasangan (beserta orang tua &amp; saudaranya), dan anak">▲</button><button type="button" class="qb qd${state.focus === id ? ' on' : ''}" data-q="desc" aria-label="Lihat keturunan ${esc(p.nama)}" title="Lihat keturunan ${esc(p.nama)}">▼</button>
+        ${qx}${up}<span class="gm" aria-hidden="true">${p.gender === 'P' ? '♀' : '♂'}</span><div class="ph">${photoHTML(p)}</div><div class="nm">${esc(p.nama)}</div><div class="yr">${u.ghost ? '↪ ada di pohon lain' : esc(lifeText(p))}</div></div>`;
+    });
+  });
+  DIM = { w: L.width, h: L.height };
+  const stage = $('#stage');
+  stage.style.width = DIM.w + 'px'; stage.style.height = DIM.h + 'px';
+  const s = $('#lines'); s.setAttribute('width', DIM.w); s.setAttribute('height', DIM.h); s.innerHTML = bands + svg;
+  $('#cards').innerHTML = cards;
+  if (state.fit) { const vw = $('#viewport').clientWidth - 24; state.zoom = Math.max(.35, Math.min(1, vw / DIM.w)); state.fit = false; }
+  applyZoom();
+}
+function applyZoom() {
+  state.zoom = Math.max(.3, Math.min(2, state.zoom));
+  $('#stage').style.transform = `scale(${state.zoom})`;
+  $('#zoomwrap').style.width = DIM.w * state.zoom + 'px';
+  $('#zoomwrap').style.height = DIM.h * state.zoom + 'px';
+}
+$('#z-in').onclick = () => { state.zoom *= 1.2; applyZoom(); };
+$('#z-out').onclick = () => { state.zoom /= 1.2; applyZoom(); };
+$('#z-fit').onclick = () => { state.fit = true; render(); };
+$('#viewport').addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); state.zoom *= e.deltaY < 0 ? 1.08 : 1 / 1.08; applyZoom(); } }, { passive: false });
+
+let pan = null;
+const vp = $('#viewport');
+vp.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' || e.target.closest('.card,.mk,#empty .box')) return;
+  pan = { x: e.clientX, y: e.clientY, sl: vp.scrollLeft, st: vp.scrollTop }; vp.classList.add('pan');
+});
+window.addEventListener('pointermove', e => { if (pan) { vp.scrollLeft = pan.sl - (e.clientX - pan.x); vp.scrollTop = pan.st - (e.clientY - pan.y); } });
+window.addEventListener('pointerup', () => { pan = null; vp.classList.remove('pan'); });
+
+$('#cards').addEventListener('click', e => {
+  const q = e.target.closest('.qb');            // tombol cepat ▲ / ▼ di kartu (tanpa membuka detail)
+  if (q) {
+    const id = q.closest('.card').dataset.id;
+    if (q.dataset.q === 'exp') { if (state.exp.has(id)) state.exp.delete(id); else state.exp.add(id); render(); return; }   // buka/tutup pasangan & anak di tempat
+    const target = q.dataset.q === 'near' ? 'near:' + id : id;
+    setFocus(state.focus === target ? 'all' : target);   // klik lagi pada tombol yang aktif = kembali ke seluruh keluarga
+    return;
+  }
+  const u = e.target.closest('.up'); if (u) { setFocus('asal:' + u.closest('.card').dataset.id); return; }   // ikon ↖ → buka keluarga asal
+  const c = e.target.closest('.card'); if (c) openPerson(c.dataset.id);
+});
+$('#cards').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('card')) openPerson(e.target.dataset.id); });
+$('#lines').addEventListener('click', e => { const m = e.target.closest('.mk'); if (m) openMarriage(m.dataset.m); });
+
+/* ---------- Navigator keluarga: dropdown bertingkat per generasi ---------- */
+const NAVX = new Set();   // orang yang anak-anaknya sedang dibuka
+let NAVT = [];
+function focusLabel() {
+  const f = state.focus; if (f === 'all') return 'Seluruh keluarga';
+  const mm = f.match(/^(asal|near):(.+)$/), id = mm ? mm[2] : f, n = (IDX.p.get(id) || {}).nama || '';
+  return (mm ? (mm[1] === 'asal' ? 'Keluarga asal ' : 'Keluarga dekat ') : 'Keturunan ') + n;
+}
+function updateNavLabel() { $('#nav-label').textContent = focusLabel(); }
+// Urutan mengikuti tampilan pohon: generasi pertama dulu, tiap generasi dari kiri ke kanan (yang lahir lebih dulu di kiri).
+function navTree() {
+  const L = layout('all');
+  const conv = u => ({
+    id: u.entry, gen: u.gen, ghost: !!u.ghost, spouses: u.order.filter(x => x !== u.entry),
+    kids: u.groups.flatMap(g => {
+      const by = new Map(g.units.map(c => [c.entry, c]));
+      return (IDX.kids.get(g.m.id) || []).filter(k => by.has(k.id) || (g.links || []).includes(k.id))
+        .map(k => by.has(k.id) ? conv(by.get(k.id)) : { id: k.id, gen: u.gen + 1, ghost: true, spouses: [], kids: [] });
+    })
+  });
+  return L.roots.map(conv);
+}
+function drawNav() {
+  const pn = $('#nav-panel'), keep = pn.scrollTop;
+  const node = (n, depth) => {
+    const p = IDX.p.get(n.id); if (!p) return '';
+    const has = n.kids.length > 0, open = NAVX.has(n.id);
+    const sp = n.spouses.map(sid => {
+      const o = IDX.p.get(sid); if (!o) return '';
+      const hasPar = IDX.m.has(o.parent_nikah_id);
+      return `<button class="ns" data-nav="${hasPar ? 'asal:' : ''}${esc(sid)}" title="${hasPar ? 'Lihat keluarga asal ' : 'Lihat pohon '}${esc(o.nama)}">${esc(o.nama)}</button>`;
+    }).filter(Boolean).join('<span aria-hidden="true">·</span>');
+    return `<div class="nv ${p.gender}" style="padding-left:${4 + depth * 20}px">
+      ${has ? `<button class="tg" data-tg="${esc(n.id)}" aria-expanded="${open}" aria-label="${open ? 'Tutup' : 'Tampilkan'} anak ${esc(p.nama)}">${open ? '▾' : '▸'}</button>` : '<span class="tg sp0"></span>'}
+      <span class="gs" aria-hidden="true">${p.gender === 'P' ? '♀' : '♂'}</span>
+      <button class="nn" data-nav="${esc(n.id)}" title="Lihat pohon keturunan ${esc(p.nama)}">${esc(p.nama)}</button>
+      ${sp ? `<span class="spw">♥ ${sp}</span>` : ''}${n.ghost ? '<span class="gn">(lihat di pohon lain)</span>' : `<span class="gn">Gen ${n.gen + 1}</span>`}</div>` +
+      (has && open ? n.kids.map(k => node(k, depth + 1)).join('') : '');
+  };
+  pn.innerHTML = `<div class="nvh"><button class="nn ${state.focus === 'all' ? 'cur' : ''}" data-nav="all">Seluruh keluarga</button><span class="spc"></span>
+      <button class="btn sm" data-navx="open">Buka semua</button><button class="btn sm" data-navx="close">Tutup semua</button></div>` +
+    (NAVT.length ? NAVT.map(n => node(n, 0)).join('') : '<div class="tag" style="padding:10px">Belum ada data.</div>');
+  pn.scrollTop = keep;
+}
+function toggleNav(show) {
+  const pn = $('#nav-panel'), btn = $('#nav-btn');
+  if (show === undefined) show = pn.hidden;
+  if (!show) { pn.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
+  reindex(); NAVT = navTree(); drawNav(); pn.hidden = false; btn.setAttribute('aria-expanded', 'true');
+  const r = btn.getBoundingClientRect();
+  pn.style.top = (r.bottom + 6) + 'px';
+  pn.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pn.offsetWidth - 8)) + 'px';
+}
+$('#nav-btn').onclick = e => { e.stopPropagation(); toggleNav(); };
+$('#nav-panel').addEventListener('click', e => {
+  e.stopPropagation();
+  const tg = e.target.closest('[data-tg]');
+  if (tg) { const id = tg.dataset.tg; if (NAVX.has(id)) NAVX.delete(id); else NAVX.add(id); drawNav(); return; }
+  const x = e.target.closest('[data-navx]');
+  if (x) { if (x.dataset.navx === 'open') { const w = ns => ns.forEach(n => { if (n.kids.length) NAVX.add(n.id); w(n.kids); }); w(NAVT); } else NAVX.clear(); drawNav(); return; }
+  const g = e.target.closest('[data-nav]');
+  if (g) { toggleNav(false); setFocus(g.dataset.nav); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.nav')) toggleNav(false); });
+window.addEventListener('resize', () => toggleNav(false));
+function setFocus(v) {
+  state.focus = v; state.fit = true; state.hit = new Set(); state.exp.clear(); $('#search').value = '';
+  const mm = v.match(/^(asal|near):(.+)$/); if (mm) state.hit.add(mm[2]);   // tandai orang yang sedang dilihat
+  render(); $('#viewport').scrollTo(0, 0);
+}
+$('#back-all').onclick = () => setFocus('all');
+
+$('#search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase(); state.hit = new Set();
+  if (q.length >= 2) state.orang.forEach(p => { if (p.nama.toLowerCase().includes(q)) state.hit.add(p.id); });
+  render();
+  const first = [...state.hit].find(id => POS[id]);
+  if (first) { const z = state.zoom; vp.scrollTo({ left: POS[first].x * z - vp.clientWidth / 2 + (vp.scrollLeft ? 0 : 0), top: POS[first].y * z - vp.clientHeight / 2 }); }
+});
+
+/* ---------- Toast & Modal ---------- */
+let tt;
+function toast(msg, bad) { const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, bad ? 5000 : 2200); }
+function openModal(html) { const m = $('#modal'); m.innerHTML = html; $('#mb').hidden = false; m.scrollTop = 0; return m; }
+function closeModal() { $('#mb').hidden = true; $('#modal').innerHTML = ''; }
+$('#mb').addEventListener('mousedown', e => { if (e.target.id === 'mb') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#mb').hidden) closeModal(); else if (!$('#nav-panel').hidden) toggleNav(false); } });
+
+const ACT = {
+  close: closeModal,
+  open: d => openPerson(d.id),
+  edit: d => personForm({ person: IDX.p.get(d.id) }),
+  addSpouse: d => marriageForm({ p1: d.id }),
+  addChild: d => { const m = IDX.m.get(d.m); personForm({ preset: { parent_nikah_id: d.m }, back: m && m.p1 }); },
+  addChildSolo: d => addChildSolo(d.id),
+  editM: d => marriageForm({ marriage: IDX.m.get(d.m) }),
+  viewM: d => openMarriage(d.m),
+  addKids: d => { const m = IDX.m.get(d.m); kidsForm(d.m, { back: m && m.p1 }); },
+  addKidsSolo: d => addKidsSolo(d.id),
+  addSiblings: d => siblingsForm(d.id),
+  near: d => { closeModal(); setFocus('near:' + d.id); },
+  origin: d => { closeModal(); setFocus('asal:' + d.id); },
+  addParents: d => parentsForm(d.id),
+  merge: d => mergeForm(d.id),
+  copyCode: d => { const t = codeStr(IDX.p.get(d.id)); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Kode disalin: ' + t)).catch(() => prompt('Salin kode ini:', t)); },
+  toggleGender: async d => {
+    const p = IDX.p.get(d.id); if (!p) return;
+    try { await commit([{ op: 'upsert', t: 'orang', row: { ...p, gender: p.gender === 'P' ? 'L' : 'P' } }]); toast('Jenis kelamin diubah'); openPerson(d.id); } catch (e) { /* toast sudah tampil */ }
+  },
+  del: d => deletePerson(d.id),
+  focus: d => { closeModal(); setFocus(d.id); }
+};
+$('#modal').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && ACT[b.dataset.act]) { e.preventDefault(); ACT[b.dataset.act](b.dataset); } });
+
+/* ---------- Detail orang ---------- */
+function sibHTML(p, par) {
+  if (!par) return '';
+  const full = (IDX.kids.get(par.id) || []).filter(k => k.id !== p.id), half = [];
+  [par.p1, par.p2].filter(Boolean).forEach(pid => (IDX.marr.get(pid) || []).forEach(m => {
+    if (m.id !== par.id) (IDX.kids.get(m.id) || []).forEach(k => { if (!half.some(x => x.id === k.id)) half.push(k); });
+  }));
+  const chips = a => a.map(k => `<a class="chip" data-act="open" data-id="${esc(k.id)}">${esc(k.nama)}</a>`).join(' ');
+  return (full.length ? `<dt>Saudara kandung</dt><dd>${chips(full)}</dd>` : '') + (half.length ? `<dt>Saudara tiri</dt><dd>${chips(half)}</dd>` : '');
+}
+function openPerson(id) {
+  const p = IDX.p.get(id); if (!p) return;
+  const ed = state.role === 'edit';
+  const par = IDX.m.get(p.parent_nikah_id);
+  const marrs = IDX.marr.get(id) || [];
+  const rows = [['Lahir', p.lahir], ['Wafat', p.wafat], ['Tempat lahir', p.tempat], ['Catatan', p.catatan]].filter(r => r[1]);
+  const link = i => `<a class="lnk" data-act="open" data-id="${esc(i)}">${esc(nm(i))}</a>`;
+  let h = `<div class="mh"><div class="bigph ${p.gender}">${photoHTML(p)}</div>
+    <div><h2>${esc(p.nama)}</h2><div class="sub">${p.gender === 'P' ? 'Perempuan' : 'Laki-laki'}${lifeText(p) ? ' · ' + esc(lifeText(p)) : ''}</div></div>
+    <button class="x" data-act="close" aria-label="Tutup">✕</button></div>`;
+  h += '<dl class="info">' + rows.map(r => `<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('') +
+    `<dt>Kode</dt><dd><code>${esc(codeStr(p))}</code> <button class="btn sm" data-act="copyCode" data-id="${esc(id)}">Salin</button>${ed ? ` <button class="btn sm" data-act="merge" data-id="${esc(id)}" title="Gabungkan dengan orang yang sama dari pohon lain">Gabungkan dengan…</button>` : ''}</dd>` +
+    (par ? `<dt>Orang tua</dt><dd>${link(par.p1)}${par.p2 ? ' &amp; ' + link(par.p2) : ''}</dd>` : '') + sibHTML(p, par) + '</dl>';
+  h += `<div class="sec"><h3>Pernikahan${marrs.length > 1 ? ` (${marrs.length})` : ''}</h3>`;
+  if (!marrs.length) h += ed
+    ? `<div class="mrow"><div class="t"><div>♥ <span class="tag">Pasangan tidak tercatat</span></div></div>
+      <div class="kids"><span class="tag">Anak:</span><span class="tag">belum ada</span>
+      <button class="btn sm" data-act="addChildSolo" data-id="${esc(id)}">+ Anak</button><button class="btn sm" data-act="addKidsSolo" data-id="${esc(id)}">+ Banyak anak</button></div></div>`
+    : '<div class="tag">Belum ada pasangan tercatat.</div>';
+  marrs.forEach(m => {
+    const other = m.p1 === id ? m.p2 : m.p1;
+    const ks = IDX.kids.get(m.id) || [];
+    const o2 = other && IDX.p.get(other);
+    const sb = o2 ? (IDX.m.has(o2.parent_nikah_id)
+      ? `<button class="btn sm" data-act="origin" data-id="${esc(other)}" title="Lihat pohon keluarga asal ${esc(o2.nama)}">Keluarga asal</button>`
+      : (ed ? `<button class="btn sm" data-act="addParents" data-id="${esc(other)}" title="Tambahkan orang tua ${esc(o2.nama)} untuk membuat pohon keluarganya">+ Orang tua</button>` : '')) : '';
+    h += `<div class="mrow"><div class="t"><div>♥ ${other ? link(other) : '<span class="tag">Pasangan tidak tercatat</span>'}
+      <span class="tag"> · ${[m.tahun, STATUS[m.status]].filter(Boolean).join(' · ')}</span></div>
+      <div class="bt">${sb}${ed ? `<button class="btn sm" data-act="editM" data-m="${esc(m.id)}">Ubah</button>` : ''}</div></div>
+      ${m.catatan ? `<div class="tag">${esc(m.catatan)}</div>` : ''}
+      <div class="kids"><span class="tag">Anak:</span>${ks.length ? ks.map(k => `<a class="chip" data-act="open" data-id="${esc(k.id)}">${esc(k.nama)}</a>`).join('') : '<span class="tag">belum ada</span>'}
+      ${ed ? `<button class="btn sm" data-act="addChild" data-m="${esc(m.id)}">+ Anak</button><button class="btn sm" data-act="addKids" data-m="${esc(m.id)}">+ Banyak anak</button>` : ''}</div></div>`;
+  });
+  h += '</div><div class="acts">';
+  if (ed) {
+    h += `<button class="btn primary sm" data-act="addSpouse" data-id="${esc(id)}">+ Pasangan / pernikahan</button>`;
+    if (marrs.length) h += `<button class="btn sm" data-act="addChildSolo" data-id="${esc(id)}">+ Anak (pasangan tidak tercatat)</button>`;
+    h += `<button class="btn sm" data-act="edit" data-id="${esc(id)}">Ubah data &amp; foto</button>`;
+    h += `<button class="btn sm" data-act="toggleGender" data-id="${esc(id)}">Ubah jadi ${p.gender === 'P' ? 'Laki-laki' : 'Perempuan'}</button>`;
+  }
+  if (par) h += `<button class="btn sm" data-act="origin" data-id="${esc(id)}">Lihat keluarga asal</button>`;
+  else if (ed) h += `<button class="btn sm" data-act="addParents" data-id="${esc(id)}">+ Orang tua</button>`;
+  if (ed) h += `<button class="btn sm" data-act="addSiblings" data-id="${esc(id)}">+ Saudara</button>`;
+  h += `<button class="btn sm" data-act="near" data-id="${esc(id)}" title="Tampilkan orang tua, saudara kandung &amp; tiri, pasangan (beserta orang tua &amp; saudaranya), dan anak-anaknya">Keluarga 1 level</button>`;
+  h += `<button class="btn sm" data-act="focus" data-id="${esc(id)}">Lihat keturunan</button><span class="grow"></span>`;
+  if (ed) h += `<button class="btn danger sm" data-act="del" data-id="${esc(id)}">Hapus</button>`;
+  h += '</div>';
+  openModal(h);
+}
+function openMarriage(mid) {
+  const m = IDX.m.get(mid); if (!m) return;
+  const ed = state.role === 'edit', ks = IDX.kids.get(m.id) || [];
+  openModal(`<div class="mh"><div><h2>${esc(marrTitle(m))}</h2><div class="sub">${[m.tahun, STATUS[m.status]].filter(Boolean).join(' · ')}</div></div>
+    <button class="x" data-act="close" aria-label="Tutup">✕</button></div>
+    ${m.catatan ? `<p>${esc(m.catatan)}</p>` : ''}
+    <div class="kids"><span class="tag">Anak:</span>${ks.length ? ks.map(k => `<a class="chip" data-act="open" data-id="${esc(k.id)}">${esc(k.nama)}</a>`).join('') : '<span class="tag">belum ada</span>'}</div>
+    <div class="acts"><button class="btn sm" data-act="open" data-id="${esc(m.p1)}">Buka ${esc(nm(m.p1))}</button>
+    ${m.p2 ? `<button class="btn sm" data-act="open" data-id="${esc(m.p2)}">Buka ${esc(nm(m.p2))}</button>` : ''}
+    ${ed ? `<button class="btn sm" data-act="addChild" data-m="${esc(m.id)}">+ Anak</button><button class="btn sm" data-act="addKids" data-m="${esc(m.id)}">+ Banyak anak</button><button class="btn sm" data-act="editM" data-m="${esc(m.id)}">Ubah pernikahan</button>` : ''}</div>`);
+}
+
+/* ---------- Foto ---------- */
+function resizeImage(file, max = 480) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', .82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Gambar tidak dapat dibaca. Gunakan JPG atau PNG.')); };
+    img.src = url;
+  });
+}
+
+/* ---------- Form orang ---------- */
+function personForm({ person = null, preset = {}, extraOps = [], back = null } = {}) {
+  const p = person ? { ...person } : { id: uid('p_'), nama: '', gender: preset.gender || 'L', lahir: '', wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: preset.parent_nikah_id || '', kode: newCode() };
+  const banned = descendants(p.id); banned.add(p.id);
+  const pendingM = extraOps.filter(o => o.t === 'nikah' && o.op === 'upsert').map(o => o.row);
+  const pms = [...state.nikah, ...pendingM].filter(m => !banned.has(m.p1) && !banned.has(m.p2)).sort((a, b) => marrTitle(a).localeCompare(marrTitle(b)));
+  const photo = { mode: 'keep', data: null };
+  const m = openModal(`<form id="pf" autocomplete="off">
+    <div class="mh"><h2>${person ? 'Ubah data' : 'Tambah orang'}</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="f"><label>Foto</label><div class="photo-row"><div class="bigph" id="pv">${photoHTML(p)}</div>
+      <div><label class="btn sm" style="margin:0">Pilih foto<input id="pfile" type="file" accept="image/*" hidden></label>
+      <button type="button" class="btn sm" id="prm" ${p.foto ? '' : 'hidden'}>Hapus foto</button>
+      <div class="hint">Foto dikecilkan otomatis sebelum disimpan.</div></div></div></div>
+    <div class="g">
+      <div class="f full"><label for="f-nama">Nama lengkap *</label><input type="text" id="f-nama" name="nama" value="${esc(p.nama)}" required></div>
+      <div class="f full"><label id="f-g-l">Jenis kelamin</label><div class="seg" role="radiogroup" aria-labelledby="f-g-l">
+        <label class="seg-o"><input type="radio" name="gender" value="L" ${p.gender !== 'P' ? 'checked' : ''}><span>♂ Laki-laki</span></label>
+        <label class="seg-o"><input type="radio" name="gender" value="P" ${p.gender === 'P' ? 'checked' : ''}><span>♀ Perempuan</span></label></div></div>
+      <div class="f"><label for="f-l">Tanggal lahir</label><input type="text" id="f-l" name="lahir" value="${esc(p.lahir)}" placeholder="1950 atau 1950-03-12"><div class="hint">Boleh hanya tahun.</div></div>
+      <div class="f"><label for="f-w">Tanggal wafat</label><input type="text" id="f-w" name="wafat" value="${esc(p.wafat)}" placeholder="Kosongkan jika masih hidup"></div>
+      <div class="f full"><label for="f-t">Tempat lahir</label><input type="text" id="f-t" name="tempat" value="${esc(p.tempat)}"></div>
+      <div class="f full"><label for="f-p">Anak dari pernikahan</label><select id="f-p" name="parent"><option value="">— tidak tercatat —</option>
+        ${pms.map(x => `<option value="${esc(x.id)}" ${x.id === p.parent_nikah_id ? 'selected' : ''}>${esc(marrTitle(x))}${x.tahun ? ' (' + esc(x.tahun) + ')' : ''}</option>`).join('')}</select>
+        <div class="hint">Pilih pernikahan orang tuanya agar muncul di bawah mereka.</div></div>
+      <div class="f full"><label for="f-k">Kode unik</label><input type="text" id="f-k" name="kode" value="${esc(codeStr(p))}">
+        <div class="hint">Kode orang ini di pohon ini. Untuk menautkan dengan orang yang sama di pohon lain, tambahkan kodenya dipisah "/", contoh: <b>A123/B324</b>.</div></div>
+      <div class="f full"><label for="f-c">Catatan</label><textarea id="f-c" name="catatan">${esc(p.catatan)}</textarea></div>
+    </div>
+    <div class="err" id="perr"></div>
+    <div class="acts"><button class="btn primary" type="submit" id="psave">Simpan</button><button class="btn" type="button" id="pcancel">Batal</button></div></form>`);
+  const f = $('#pf', m);
+  const cancel = () => { if (person) openPerson(person.id); else if (back) openPerson(back); else closeModal(); };
+  $('#pcancel', m).onclick = cancel;
+  $('#pfile', m).onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try { photo.data = await resizeImage(file); photo.mode = 'new'; $('#pv', m).innerHTML = `<img src="${photo.data}" alt="">`; $('#prm', m).hidden = false; }
+    catch (err) { $('#perr', m).textContent = err.message; }
+  };
+  $('#prm', m).onclick = () => { photo.mode = 'remove'; photo.data = null; $('#pv', m).textContent = initials($('#f-nama', m).value || p.nama); $('#prm', m).hidden = true; };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const fd = new FormData(f), btn = $('#psave', m); btn.disabled = true; $('#perr', m).textContent = '';
+    try {
+      const row = { ...p, nama: fd.get('nama').trim(), gender: fd.get('gender'), lahir: fd.get('lahir').trim(), wafat: fd.get('wafat').trim(), tempat: fd.get('tempat').trim(), catatan: fd.get('catatan').trim(), parent_nikah_id: fd.get('parent') };
+      if (!row.nama) throw new Error('Nama wajib diisi.');
+      const codes = parseCodes(fd.get('kode')); row.kode = (codes.length ? codes : [autoCode(row)]).join('/');
+      const clash = state.orang.filter(o => o.id !== row.id && codesOf(o).some(c => codes.includes(c)));
+      if (photo.mode === 'remove') { if (state.mode === 'remote' && p.foto) api('deletePhoto', { url: p.foto }).catch(() => {}); row.foto = ''; }
+      if (photo.mode === 'new') {
+        if (state.mode === 'remote') {
+          btn.textContent = 'Mengunggah foto…';
+          const r = await api('uploadPhoto', { personId: p.id, mime: 'image/jpeg', base64: photo.data.split(',')[1], old: p.foto });
+          row.foto = r.url;
+        } else row.foto = photo.data;
+      }
+      btn.textContent = 'Menyimpan…';
+      await commit([...extraOps, { op: 'upsert', t: 'orang', row }]);
+      toast('Tersimpan');
+      for (const o of clash) {
+        if (!IDX.p.has(o.id) || mergeForbidden(row.id).has(o.id)) continue;
+        if (confirm(`Kode "${codeStr(o)}" juga dipakai oleh "${o.nama}". Apakah ini orang yang sama?\n\nGabungkan "${o.nama}" ke dalam "${row.nama}" sekarang?`)) await doMerge(row.id, o.id, true);
+      }
+      openPerson(row.id);
+    } catch (err) { $('#perr', m).textContent = err.message; btn.disabled = false; btn.textContent = 'Simpan'; }
+  };
+  setTimeout(() => { const n = $('#f-nama', m); if (n) n.focus(); }, 30);
+}
+
+/* ---------- Form pernikahan ---------- */
+function marriageForm({ marriage = null, p1 = '' } = {}) {
+  const m0 = marriage ? { ...marriage } : { id: uid('m_'), p1, p2: '', tahun: '', status: 'menikah', catatan: '' };
+  const people = [...state.orang].sort((a, b) => a.nama.localeCompare(b.nama));
+  const opt = sel => people.map(x => `<option value="${esc(x.id)}" ${x.id === sel ? 'selected' : ''}>${esc(x.nama)}${yr(x.lahir) ? ' (' + yr(x.lahir) + ')' : ''}</option>`).join('');
+  const g1 = (IDX.p.get(m0.p1) || {}).gender;
+  const m = openModal(`<form id="mf" autocomplete="off">
+    <div class="mh"><h2>${marriage ? 'Ubah pernikahan' : 'Tambah pasangan'}</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="g">
+      <div class="f full"><label for="m-1">Pasangan 1 *</label><select id="m-1" name="p1" required>${opt(m0.p1)}</select></div>
+      <div class="f full"><label for="m-2">Pasangan 2</label><select id="m-2" name="p2"><option value="">— tidak tercatat —</option>${opt(m0.p2)}<option value="__new__">＋ Orang baru…</option></select>
+        <div class="hint">Satu orang boleh punya beberapa pernikahan. Tambahkan lagi pernikahan lain dari kartunya.</div></div>
+    </div>
+    <div class="newp" id="newp" hidden><div class="g"><div class="f"><label for="n-nama">Nama pasangan baru *</label><input type="text" id="n-nama"></div>
+      <div class="f"><label for="n-g">Jenis kelamin</label><select id="n-g"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div></div>
+      <div class="hint">Foto dan data lain bisa ditambahkan setelah disimpan.</div></div>
+    <div class="g">
+      <div class="f"><label for="m-y">Tahun menikah</label><input type="text" id="m-y" name="tahun" value="${esc(m0.tahun)}" placeholder="mis. 1975"></div>
+      <div class="f"><label for="m-s">Status</label><select id="m-s" name="status">${Object.keys(STATUS).map(k => `<option value="${k}" ${m0.status === k ? 'selected' : ''}>${STATUS[k]}</option>`).join('')}</select></div>
+      <div class="f full"><label for="m-c">Catatan</label><input type="text" id="m-c" name="catatan" value="${esc(m0.catatan)}"></div>
+    </div>
+    <div class="err" id="merr"></div>
+    <div class="acts"><button class="btn primary" type="submit" id="msave">Simpan</button><button class="btn" type="button" id="mcancel">Batal</button>
+    <span class="grow"></span>${marriage ? '<button class="btn danger sm" type="button" id="mdel">Hapus pernikahan</button>' : ''}</div></form>`);
+  const f = $('#mf', m);
+  const gotoP = id => id ? openPerson(id) : closeModal();
+  $('#mcancel', m).onclick = () => gotoP(m0.p1);
+  $('#n-g', m).value = g1 === 'L' ? 'P' : 'L';
+  $('#m-2', m).onchange = e => { $('#newp', m).hidden = e.target.value !== '__new__'; if (e.target.value === '__new__') $('#n-nama', m).focus(); };
+  if ($('#mdel', m)) $('#mdel', m).onclick = async () => {
+    const ks = IDX.kids.get(m0.id) || [];
+    if (!confirm(`Hapus pernikahan "${marrTitle(m0)}"?${ks.length ? `\n${ks.length} anak tidak akan dihapus, hanya hubungan ke orang tuanya dilepas.` : ''}`)) return;
+    try {
+      await commit([...ks.map(k => ({ op: 'upsert', t: 'orang', row: { ...k, parent_nikah_id: '' } })), { op: 'delete', t: 'nikah', id: m0.id }]);
+      toast('Pernikahan dihapus'); gotoP(m0.p1);
+    } catch (e) { /* toast sudah tampil */ }
+  };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const fd = new FormData(f), btn = $('#msave', m); $('#merr', m).textContent = '';
+    const ops = []; let p2 = fd.get('p2'); const p1v = fd.get('p1');
+    if (p2 === '__new__') {
+      const nama = $('#n-nama', m).value.trim();
+      if (!nama) { $('#merr', m).textContent = 'Nama pasangan baru wajib diisi.'; return; }
+      p2 = uid('p_');
+      ops.push({ op: 'upsert', t: 'orang', row: { id: p2, nama, gender: $('#n-g', m).value, lahir: '', wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: '', kode: newCode() } });
+    }
+    if (!p1v) { $('#merr', m).textContent = 'Pasangan 1 wajib dipilih.'; return; }
+    if (p1v === p2) { $('#merr', m).textContent = 'Pasangan 1 dan 2 tidak boleh orang yang sama.'; return; }
+    ops.push({ op: 'upsert', t: 'nikah', row: { ...m0, p1: p1v, p2: p2 || '', tahun: fd.get('tahun').trim(), status: fd.get('status'), catatan: fd.get('catatan').trim() } });
+    btn.disabled = true;
+    try { await commit(ops); toast('Tersimpan'); openPerson(p1v); } catch (err) { btn.disabled = false; }
+  };
+}
+
+function addChildSolo(pid) {
+  const existing = (IDX.marr.get(pid) || []).find(m => !m.p2 && m.p1 === pid);
+  if (existing) return personForm({ preset: { parent_nikah_id: existing.id }, back: pid });
+  const mid = uid('m_');
+  personForm({ preset: { parent_nikah_id: mid }, back: pid, extraOps: [{ op: 'upsert', t: 'nikah', row: { id: mid, p1: pid, p2: '', tahun: '', status: 'menikah', catatan: '' } }] });
+}
+
+
+/* ---------- Tambah banyak orang sekaligus (anak / saudara) ---------- */
+let _rk = 0;
+function rowsEditor(box, count = 3) {
+  const add = (focus, nama = '') => {
+    const k = ++_rk, d = document.createElement('div'); d.className = 'rw';
+    d.innerHTML = `<input type="text" class="rn" placeholder="Nama lengkap" aria-label="Nama" value="${esc(nama)}">
+      <div class="seg" role="radiogroup" aria-label="Jenis kelamin"><label class="seg-o"><input type="radio" name="rg${k}" value="L"><span>♂</span></label><label class="seg-o"><input type="radio" name="rg${k}" value="P"><span>♀</span></label></div>
+      <input type="text" class="ry" inputmode="numeric" placeholder="Thn lahir" aria-label="Tahun lahir">
+      <button type="button" class="rx" aria-label="Hapus baris">✕</button>`;
+    box.appendChild(d);
+    const n = $('.rn', d);
+    $('.rx', d).onclick = () => { if (box.children.length > 1) d.remove(); else { n.value = ''; $('.ry', d).value = ''; d.querySelectorAll('input[type=radio]').forEach(r => r.checked = false); } };
+    n.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const nx = d.nextElementSibling; if (nx) $('.rn', nx).focus(); else add(true); } });
+    n.addEventListener('paste', e => {          // tempel banyak nama sekaligus (satu nama per baris)
+      const t = ((e.clipboardData || window.clipboardData).getData('text') || '');
+      if (!/\n/.test(t.trim())) return;
+      e.preventDefault();
+      t.split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach((l, i) => { if (i === 0) n.value = l; else add(false, l); });
+    });
+    if (focus) n.focus();
+  };
+  for (let i = 0; i < count; i++) add(false);
+  return {
+    add: () => add(true),
+    read() {
+      const rows = []; let bad = '';
+      [...box.children].forEach(d => {
+        const nama = $('.rn', d).value.trim(); if (!nama) return;
+        const g = d.querySelector('input[type=radio]:checked');
+        if (!g && !bad) bad = nama;
+        rows.push({ nama, gender: g ? g.value : '', lahir: $('.ry', d).value.trim() });
+      });
+      return { rows, bad };
+    }
+  };
+}
+const newKid = (r, mid) => ({ op: 'upsert', t: 'orang', row: { id: uid('p_'), nama: r.nama, gender: r.gender, lahir: r.lahir, wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: mid, kode: newCode() } });
+
+function kidsForm(mid, { back = null, extraOps = [] } = {}) {
+  const mar = IDX.m.get(mid) || (extraOps.find(o => o.t === 'nikah' && o.row.id === mid) || {}).row;
+  if (!mar) return;
+  const m = openModal(`<form id="kf" autocomplete="off">
+    <div class="mh"><h2>Tambah beberapa anak</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="note">Anak dari <b>${esc(marrTitle(mar))}</b>. Isi nama dan pilih ♂ / ♀ untuk tiap anak. Anda juga bisa menempel banyak nama sekaligus (satu nama per baris). Foto dan data lain bisa ditambahkan nanti lewat <i>Ubah data</i>.</div>
+    <div id="rows"></div>
+    <button type="button" class="btn sm" id="addrow">+ Tambah baris</button>
+    <div class="err" id="kerr"></div>
+    <div class="acts"><button class="btn primary" type="submit" id="ksave">Simpan semua</button><button class="btn" type="button" id="kcancel">Batal</button></div></form>`);
+  const ed = rowsEditor($('#rows', m), 3), goBack = () => (back || mar.p1) ? openPerson(back || mar.p1) : closeModal();
+  $('#addrow', m).onclick = () => ed.add();
+  $('#kcancel', m).onclick = goBack;
+  $('#kf', m).onsubmit = async e => {
+    e.preventDefault();
+    const { rows, bad } = ed.read();
+    if (!rows.length) { $('#kerr', m).textContent = 'Isi minimal satu nama.'; return; }
+    if (bad) { $('#kerr', m).textContent = `Pilih jenis kelamin untuk "${bad}".`; return; }
+    $('#ksave', m).disabled = true;
+    try { await commit([...extraOps, ...rows.map(r => newKid(r, mid))]); toast(`${rows.length} anak ditambahkan`); goBack(); }
+    catch (err) { $('#ksave', m).disabled = false; }
+  };
+}
+function addKidsSolo(pid) {
+  const existing = (IDX.marr.get(pid) || []).find(m => !m.p2 && m.p1 === pid);
+  if (existing) return kidsForm(existing.id, { back: pid });
+  const mid = uid('m_');
+  kidsForm(mid, { back: pid, extraOps: [{ op: 'upsert', t: 'nikah', row: { id: mid, p1: pid, p2: '', tahun: '', status: 'menikah', catatan: '' } }] });
+}
+
+function siblingsForm(id) {
+  const c = IDX.p.get(id); if (!c) return;
+  const par = IDX.m.get(c.parent_nikah_id);
+  const parents = par ? [par.p1, par.p2].filter(x => x && IDX.p.has(x)) : [];
+  const m = openModal(`<form id="sf" autocomplete="off">
+    <div class="mh"><h2>Tambah saudara ${esc(c.nama)}</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="f"><label id="st-l">Jenis saudara</label><div class="seg" role="radiogroup" aria-labelledby="st-l">
+      <label class="seg-o"><input type="radio" name="stype" value="kandung" checked><span>Kandung</span></label>
+      <label class="seg-o"><input type="radio" name="stype" value="tiri"><span>Tiri</span></label></div></div>
+    <div id="s-kandung">${par
+      ? `<div class="note">Saudara kandung memakai orang tua yang sama: <b>${esc(marrTitle(par))}</b>.</div>`
+      : `<div class="note">Orang tua ${esc(c.nama)} belum tercatat. Isi nama orang tuanya agar saudara tersambung (minimal salah satu).</div>
+         <div class="g"><div class="f"><label for="s-ayah">Nama ayah</label><input type="text" id="s-ayah"></div><div class="f"><label for="s-ibu">Nama ibu</label><input type="text" id="s-ibu"></div></div>`}</div>
+    <div id="s-tiri" hidden>${parents.length ? `
+      <div class="note">Saudara tiri berbagi <b>satu</b> orang tua dengan ${esc(c.nama)}, tetapi lahir dari pernikahan yang berbeda.</div>
+      <div class="f"><label for="s-par">Berbagi orang tua</label><select id="s-par">${parents.map(pid => `<option value="${esc(pid)}">${esc(nm(pid))} (${IDX.p.get(pid).gender === 'P' ? 'ibu' : 'ayah'})</option>`).join('')}</select></div>
+      <div class="f"><label for="s-mar">Dari pernikahan</label><select id="s-mar"></select></div>
+      <div class="f" id="s-newp" hidden><label for="s-np">Nama pasangan baru (boleh dikosongkan)</label><input type="text" id="s-np"></div>`
+      : `<div class="note">Orang tua ${esc(c.nama)} belum tercatat. Tambahkan orang tua dulu agar saudara tiri bisa dihubungkan.</div>
+         <button type="button" class="btn sm" data-act="addParents" data-id="${esc(id)}">+ Orang tua</button>`}</div>
+    <div class="sec"><h3>Nama saudara</h3><div id="rows"></div><button type="button" class="btn sm" id="addrow">+ Tambah baris</button></div>
+    <div class="err" id="serr"></div>
+    <div class="acts"><button class="btn primary" type="submit" id="ssave">Simpan semua</button><button class="btn" type="button" id="scancel">Batal</button></div></form>`);
+  const ed = rowsEditor($('#rows', m), 3);
+  const stype = () => m.querySelector('input[name=stype]:checked').value;
+  const fillMar = () => {
+    const sel = $('#s-mar', m); if (!sel) return;
+    const pid = $('#s-par', m).value;
+    const others = (IDX.marr.get(pid) || []).filter(x => x.id !== par.id);
+    sel.innerHTML = others.map(x => `<option value="${esc(x.id)}">${esc(marrTitle(x))}${x.tahun ? ' (' + esc(x.tahun) + ')' : ''}</option>`).join('') + '<option value="__new__">＋ Pernikahan baru…</option>';
+    sel.value = others.length ? others[0].id : '__new__';
+    $('#s-newp', m).hidden = sel.value !== '__new__';
+  };
+  m.querySelectorAll('input[name=stype]').forEach(r => r.onchange = () => { $('#s-kandung', m).hidden = stype() !== 'kandung'; $('#s-tiri', m).hidden = stype() !== 'tiri'; });
+  if ($('#s-par', m)) { $('#s-par', m).onchange = fillMar; $('#s-mar', m).onchange = e => { $('#s-newp', m).hidden = e.target.value !== '__new__'; }; fillMar(); }
+  $('#addrow', m).onclick = () => ed.add();
+  $('#scancel', m).onclick = () => openPerson(id);
+  $('#sf', m).onsubmit = async e => {
+    e.preventDefault();
+    const err = t => { $('#serr', m).textContent = t; };
+    const { rows, bad } = ed.read();
+    if (!rows.length) return err('Isi minimal satu nama saudara.');
+    if (bad) return err(`Pilih jenis kelamin untuk "${bad}".`);
+    const ops = []; let mid;
+    if (stype() === 'kandung') {
+      if (par) mid = par.id;
+      else {
+        const an = $('#s-ayah', m).value.trim(), ib = $('#s-ibu', m).value.trim();
+        if (!an && !ib) return err('Isi nama ayah atau ibu terlebih dulu.');
+        const mk = (n, g) => { const pid = uid('p_'); ops.push({ op: 'upsert', t: 'orang', row: { id: pid, nama: n, gender: g, lahir: '', wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: '', kode: newCode() } }); return pid; };
+        const f = an ? mk(an, 'L') : '', ib2 = ib ? mk(ib, 'P') : '';
+        mid = uid('m_');
+        ops.push({ op: 'upsert', t: 'nikah', row: { id: mid, p1: f || ib2, p2: f && ib2 ? ib2 : '', tahun: '', status: 'menikah', catatan: '' } });
+        ops.push({ op: 'upsert', t: 'orang', row: { ...c, parent_nikah_id: mid } });
+      }
+    } else {
+      if (!parents.length) return err('Tambahkan orang tua terlebih dulu.');
+      const pid = $('#s-par', m).value, sel = $('#s-mar', m).value;
+      if (sel === '__new__') {
+        mid = uid('m_'); const nn = $('#s-np', m).value.trim(); let p2 = '';
+        if (nn) { p2 = uid('p_'); ops.push({ op: 'upsert', t: 'orang', row: { id: p2, nama: nn, gender: IDX.p.get(pid).gender === 'L' ? 'P' : 'L', lahir: '', wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: '', kode: newCode() } }); }
+        ops.push({ op: 'upsert', t: 'nikah', row: { id: mid, p1: pid, p2, tahun: '', status: 'menikah', catatan: '' } });
+      } else mid = sel;
+    }
+    rows.forEach(r => ops.push(newKid(r, mid)));
+    $('#ssave', m).disabled = true;
+    try { await commit(ops); toast(`${rows.length} saudara ditambahkan`); openPerson(id); } catch (x) { $('#ssave', m).disabled = false; }
+  };
+}
+
+/* ---------- Tambah orang tua (membuat pohon keluarga asal seseorang) ---------- */
+function parentsForm(id) {
+  const c = IDX.p.get(id); if (!c) return;
+  const banned = descendants(id); banned.add(id);
+  const opts = g => state.orang.filter(o => o.gender === g && !banned.has(o.id)).sort((a, b) => a.nama.localeCompare(b.nama))
+    .map(o => `<option value="${esc(o.id)}">${esc(o.nama)}${yr(o.lahir) ? ' (' + yr(o.lahir) + ')' : ''}</option>`).join('');
+  const block = (key, label, g) => `<div class="f full"><label for="pr-${key}">${label}</label>
+    <select id="pr-${key}" name="${key}"><option value="__new__">＋ Orang baru…</option><option value="">— tidak dicatat —</option>${opts(g)}</select>
+    <input type="text" id="pr-${key}-n" placeholder="Nama ${label.toLowerCase()}" style="margin-top:6px"></div>`;
+  const m = openModal(`<form id="prf" autocomplete="off">
+    <div class="mh"><h2>Orang tua ${esc(c.nama)}</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="note">Catat orang tuanya lebih dulu. Dari kartu orang tua itu Anda bisa menambahkan kakek-nenek, saudara, dan seterusnya sehingga terbentuk pohon keluarga asal ${esc(c.nama)}.</div>
+    <div class="g">${block('ayah', 'Ayah', 'L')}${block('ibu', 'Ibu', 'P')}
+      <div class="f"><label for="pr-y">Tahun menikah</label><input type="text" id="pr-y" placeholder="mis. 1955"></div></div>
+    <div class="err" id="prerr"></div>
+    <div class="acts"><button class="btn primary" type="submit" id="prsave">Simpan</button><button class="btn" type="button" id="prcancel">Batal</button></div></form>`);
+  ['ayah', 'ibu'].forEach(k => { const sel = $('#pr-' + k, m), inp = $('#pr-' + k + '-n', m); sel.onchange = () => { inp.hidden = sel.value !== '__new__'; }; });
+  $('#prcancel', m).onclick = () => openPerson(id);
+  $('#prf', m).onsubmit = async e => {
+    e.preventDefault(); const ops = [];
+    const take = (k, g) => {
+      const v = $('#pr-' + k, m).value; if (!v) return '';
+      if (v !== '__new__') return v;
+      const n = $('#pr-' + k + '-n', m).value.trim(); if (!n) return '';
+      const pid = uid('p_');
+      ops.push({ op: 'upsert', t: 'orang', row: { id: pid, nama: n, gender: g, lahir: '', wafat: '', tempat: '', catatan: '', foto: '', parent_nikah_id: '', kode: newCode() } });
+      return pid;
+    };
+    const f = take('ayah', 'L'), ib = take('ibu', 'P');
+    if (!f && !ib) { $('#prerr', m).textContent = 'Isi minimal satu orang tua (ayah atau ibu).'; return; }
+    const mid = uid('m_');
+    ops.push({ op: 'upsert', t: 'nikah', row: { id: mid, p1: f || ib, p2: f && ib ? ib : '', tahun: $('#pr-y', m).value.trim(), status: 'menikah', catatan: '' } });
+    ops.push({ op: 'upsert', t: 'orang', row: { ...c, parent_nikah_id: mid } });
+    $('#prsave', m).disabled = true;
+    try { await commit(ops); toast('Orang tua ditambahkan'); openPerson(id); } catch (err) { $('#prsave', m).disabled = false; }
+  };
+  setTimeout(() => { const i = $('#pr-ayah-n', m); if (i) i.focus(); }, 30);
+}
+
+/* ---------- Cari duplikat otomatis (nama sama) & gabungkan sekaligus ---------- */
+function genDepth(id, seen = new Set()) {
+  if (seen.has(id)) return 0; seen.add(id);
+  const pm = IDX.m.get((IDX.p.get(id) || {}).parent_nikah_id); if (!pm) return 0;
+  return 1 + Math.max(0, ...[pm.p1, pm.p2].filter(x => x && IDX.p.has(x)).map(x => genDepth(x, seen)));
+}
+function findDupGroups() {
+  reindex();
+  const by = new Map();
+  state.orang.forEach(p => { const k = normKey(p.nama) + '|' + p.gender; if (!by.has(k)) by.set(k, []); by.get(k).push(p); });
+  const weight = p => (IDX.marr.get(p.id) || []).length * 2 + (IDX.marr.get(p.id) || []).reduce((n, m) => n + (IDX.kids.get(m.id) || []).length, 0) + (p.foto ? 1 : 0) + (p.parent_nikah_id ? 1 : 0);
+  const groups = [];
+  by.forEach(list => {
+    if (list.length < 2) return;
+    list = [...list].sort((a, b) => (yr(b.lahir) ? 1 : 0) - (yr(a.lahir) ? 1 : 0));   // yang punya tahun lahir jadi jangkar
+    const used = new Set();
+    list.forEach((p, i) => {
+      if (used.has(p.id)) return;
+      let cl = [p]; used.add(p.id);
+      list.forEach((q, j) => { if (j !== i && !used.has(q.id) && (!yr(p.lahir) || !yr(q.lahir) || yr(p.lahir) === yr(q.lahir))) { cl.push(q); used.add(q.id); } });
+      if (cl.length < 2) return;
+      const keep = cl.reduce((b, x) => weight(x) > weight(b) ? x : b, cl[0]);
+      const forbid = mergeForbidden(keep.id);
+      cl = [keep, ...cl.filter(x => x.id !== keep.id && !forbid.has(x.id))];
+      if (cl.length < 2) return;
+      groups.push({ keep, members: cl, strong: cl.every(x => yr(x.lahir) && yr(x.lahir) === yr(cl[0].lahir)), depth: Math.min(...cl.map(x => genDepth(x.id))) });
+    });
+  });
+  return groups.sort((a, b) => a.depth - b.depth || a.keep.nama.localeCompare(b.keep.nama));
+}
+function dupsForm() {
+  const gs = findDupGroups();
+  const m = openModal(`<form id="df">
+    <div class="mh"><h2>Cari duplikat</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="note">Mencari orang dengan <b>nama dan jenis kelamin sama</b>. <span class="pill ok">Pasti</span> = tahun lahir juga sama, <span class="pill maybe">Mungkin</span> = tahun lahir salah satunya kosong.
+      Centang yang benar-benar orang yang sama. Data digabungkan dari generasi teratas lebih dulu, dan data yang dipertahankan ditandai ★.</div>
+    ${gs.length ? gs.map((g, i) => `<label class="dg"><div class="dgh"><input type="checkbox" name="g" value="${i}" ${g.strong ? 'checked' : ''}>
+      ${esc(g.keep.nama)} <span class="pill ${g.strong ? 'ok' : 'maybe'}">${g.strong ? 'Pasti' : 'Mungkin'}</span><span class="tag">${g.members.length} data</span></div>
+      <div class="dgl">${g.members.map((x, j) => `<div>${j === 0 ? '★ ' : '• '}${esc(personDesc(x))}</div>`).join('')}</div></label>`).join('')
+      : '<div class="tag" style="padding:8px 2px 14px">Tidak ditemukan orang dengan nama yang sama.</div>'}
+    <div class="err" id="derr"></div>
+    <div class="acts">${gs.length ? '<button class="btn primary" type="submit" id="dsave">Gabungkan yang dicentang</button>' : ''}<button class="btn" type="button" data-act="close">Tutup</button></div></form>`);
+  $('#df', m).onsubmit = async e => {
+    e.preventDefault();
+    const pick = [...m.querySelectorAll('input[name=g]:checked')].map(c => gs[+c.value]);
+    if (!pick.length) { $('#derr', m).textContent = 'Centang minimal satu.'; return; }
+    if (!confirm(`Gabungkan ${pick.length} kelompok orang yang sama? Orang yang bukan ★ akan dihapus dan datanya dipindahkan ke yang ★.\n\nDisarankan menekan "Cadangan" lebih dulu.`)) return;
+    $('#dsave', m).disabled = true; let done = 0;
+    for (const g of pick) {
+      for (const o of g.members.slice(1)) {
+        if (!IDX.p.has(g.keep.id) || !IDX.p.has(o.id) || mergeForbidden(g.keep.id).has(o.id)) continue;
+        if (await doMerge(g.keep.id, o.id, true)) done++;
+      }
+    }
+    toast(`${done} data digabungkan`); closeModal(); state.fit = true; render();
+  };
+}
+$('#dups').onclick = dupsForm;
+
+/* ---------- Gabungkan orang yang sama (duplikat) ---------- */
+function mergeForbidden(keepId) {
+  const f = new Set([keepId, ...descendants(keepId)]);
+  state.orang.forEach(o => { if (descendants(o.id).has(keepId)) f.add(o.id); });          // leluhur
+  (IDX.marr.get(keepId) || []).forEach(m => f.add(m.p1 === keepId ? m.p2 : m.p1));        // pasangan langsung
+  return f;
+}
+function personDesc(o) {
+  const sp = (IDX.marr.get(o.id) || []).map(m => m.p1 === o.id ? m.p2 : m.p1).filter(Boolean).map(nm);
+  const par = IDX.m.get(o.parent_nikah_id);
+  return `${o.nama} [${codeStr(o)}]${yr(o.lahir) ? ' (' + yr(o.lahir) + ')' : ''}${sp.length ? ' · pasangan: ' + sp.join(', ') : ''}${par ? ' · anak dari ' + nm(par.p1) + (par.p2 ? ' & ' + nm(par.p2) : '') : ''}`;
+}
+function mergeForm(keepId) {
+  const K = IDX.p.get(keepId); if (!K) return;
+  const forbid = mergeForbidden(keepId), key = normKey;
+  const score = o => key(o.nama) === key(K.nama) ? 0 : (key(o.nama).split(' ')[0] === key(K.nama).split(' ')[0] ? 1 : 2);
+  const cands = state.orang.filter(o => !forbid.has(o.id)).sort((a, b) => score(a) - score(b) || a.nama.localeCompare(b.nama));
+  const m = openModal(`<form id="mgf" autocomplete="off">
+    <div class="mh"><h2>Gabungkan dengan…</h2><button class="x" type="button" data-act="close" aria-label="Tutup">✕</button></div>
+    <div class="note">Gunakan ini jika orang yang sama tercatat dua kali (misalnya muncul di dua pohon keluarga yang berbeda).
+      <b>${esc(K.nama)}</b> dipertahankan. Orang yang Anda pilih di bawah akan dihapus, lalu pasangan, anak, dan datanya dipindahkan ke <b>${esc(K.nama)}</b>.</div>
+    <div class="f"><label for="mg-q">Cari duplikatnya</label><input type="text" id="mg-q" placeholder="Ketik nama atau kode…"><div class="hint">Nama bisa berbeda antar pohon. Cari dengan kode unik, misalnya <b>B324</b>.</div></div>
+    <div class="f"><select id="mg-sel" class="mg-list" size="7" aria-label="Pilih duplikat"></select>
+      <div class="hint">Nama yang sama ditampilkan paling atas. Leluhur, keturunan, dan pasangan langsung tidak bisa dipilih.</div></div>
+    <div class="err" id="mgerr"></div>
+    <div class="acts"><button class="btn primary" type="submit">Gabungkan</button><button class="btn" type="button" id="mgcancel">Batal</button></div></form>`);
+  const sel = $('#mg-sel', m), fill = q => {
+    const t = key(q || ''), T = String(q || '').trim().toUpperCase();
+    const list = cands.filter(o => !t || key(personDesc(o)).includes(t)).sort((a, b) => codesOf(b).includes(T) - codesOf(a).includes(T));
+    sel.innerHTML = list.map(o => `<option value="${esc(o.id)}">${esc(personDesc(o))}${codesOf(o).includes(T) ? '  ← kode sama' : (score(o) === 0 ? '  ← nama sama' : '')}</option>`).join('') || '<option disabled>Tidak ada yang cocok</option>';
+    if (sel.options.length && !sel.options[0].disabled) sel.selectedIndex = 0;
+  };
+  fill('');
+  $('#mg-q', m).oninput = e => fill(e.target.value);
+  $('#mgcancel', m).onclick = () => openPerson(keepId);
+  $('#mgf', m).onsubmit = e => {
+    e.preventDefault();
+    if (!sel.value) { $('#mgerr', m).textContent = 'Pilih orang yang akan digabungkan.'; return; }
+    doMerge(keepId, sel.value);
+  };
+  setTimeout(() => { const q = $('#mg-q', m); if (q) q.focus(); }, 30);
+}
+async function doMerge(keepId, dupId, silent = false) {
+  const K = IDX.p.get(keepId), D = IDX.p.get(dupId); if (!K || !D) return false;
+  const kM = IDX.marr.get(keepId) || [], dM = IDX.marr.get(dupId) || [];
+  const warn = [];
+  if (K.gender !== D.gender) warn.push(`Jenis kelamin berbeda; yang dipertahankan: ${K.gender === 'P' ? 'Perempuan' : 'Laki-laki'}.`);
+  if (K.parent_nikah_id && D.parent_nikah_id && K.parent_nikah_id !== D.parent_nikah_id) warn.push(`Orang tua yang tercatat berbeda; yang dipertahankan: orang tua "${K.nama}". Jika orang tua keduanya sebenarnya sama, gabungkan orang tuanya lebih dulu.`);
+  if (!silent && !confirm(`Gabungkan "${D.nama}" ke dalam "${K.nama}"?\n\n• "${D.nama}" akan dihapus.\n• ${dM.length} pernikahan dan anak-anaknya dipindahkan ke "${K.nama}"; pernikahan dengan pasangan yang sama disatukan.\n• Data yang kosong pada "${K.nama}" diisi dari "${D.nama}".${warn.length ? '\n\nPerhatian:\n- ' + warn.join('\n- ') : ''}`)) return false;
+
+  const work = new Map(), order = [];
+  [...kM, ...dM].forEach(m => { if (!work.has(m.id)) { work.set(m.id, { ...m }); order.push(m.id); } });
+  work.forEach(m => { if (m.p1 === dupId) m.p1 = keepId; if (m.p2 === dupId) m.p2 = keepId; });
+
+  const by = new Map(), del = new Set(), kidFix = new Map();
+  order.forEach(id => {
+    const m = work.get(id), k = (m.p1 === keepId ? m.p2 : m.p1) || '', t = by.get(k);
+    if (!t) { by.set(k, m); return; }
+    if (!t.tahun) t.tahun = m.tahun;
+    if (!t.catatan) t.catatan = m.catatan; else if (m.catatan && m.catatan !== t.catatan) t.catatan += ' | ' + m.catatan;
+    (IDX.kids.get(m.id) || []).forEach(kid => kidFix.set(kid.id, t.id));
+    del.add(m.id);
+  });
+
+  const row = { ...K };
+  ['lahir', 'wafat', 'tempat', 'foto'].forEach(f => { if (!row[f]) row[f] = D[f]; });
+  if (D.catatan && D.catatan !== row.catatan) row.catatan = row.catatan ? row.catatan + ' | ' + D.catatan : D.catatan;
+  if (!row.parent_nikah_id) row.parent_nikah_id = D.parent_nikah_id;
+  row.kode = unionCodes(codesOf(K), codesOf(D)).join('/');
+  if (normKey(D.nama) !== normKey(K.nama)) { const note = `Juga dikenal sebagai: ${D.nama}`; if (!row.catatan.includes(note)) row.catatan = row.catatan ? row.catatan + ' | ' + note : note; }
+
+  const ops = [];
+  order.forEach(id => { if (!del.has(id)) ops.push({ op: 'upsert', t: 'nikah', row: work.get(id) }); });
+  kidFix.forEach((mid, kid) => ops.push({ op: 'upsert', t: 'orang', row: { ...IDX.p.get(kid), parent_nikah_id: mid } }));
+  ops.push({ op: 'upsert', t: 'orang', row });
+  del.forEach(id => ops.push({ op: 'delete', t: 'nikah', id }));
+  const oldPm = IDX.m.get(D.parent_nikah_id);
+  if (oldPm && D.parent_nikah_id !== row.parent_nikah_id && !oldPm.p2 && !(IDX.kids.get(oldPm.id) || []).some(x => x.id !== dupId)) ops.push({ op: 'delete', t: 'nikah', id: oldPm.id });
+  ops.push({ op: 'delete', t: 'orang', id: dupId });
+  try {
+    await commit(ops);
+    if (state.mode === 'remote' && D.foto && D.foto !== row.foto) api('deletePhoto', { url: D.foto }).catch(() => {});
+    if (!silent) { toast('Berhasil digabungkan'); openPerson(keepId); }
+    return true;
+  } catch (e) { return false; }
+}
+
+/* Gabungkan otomatis orang-orang yang berbagi kode unik (dipakai setelah mengimpor pohon lain). */
+async function autoLinkByCode(before) {
+  reindex();
+  const par = new Map(state.orang.map(p => [p.id, p.id]));
+  const find = x => { while (par.get(x) !== x) { par.set(x, par.get(par.get(x))); x = par.get(x); } return x; };
+  const byCode = new Map();
+  state.orang.forEach(p => codesOf(p).forEach(c => { if (byCode.has(c)) par.set(find(p.id), find(byCode.get(c))); else byCode.set(c, p.id); }));
+  const groups = new Map();
+  state.orang.forEach(p => { const r = find(p.id); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(p.id); });
+  const list = [...groups.values()].filter(g => g.length > 1);
+  if (!list.length) return 0;
+  const lines = list.slice(0, 8).map(g => '• ' + g.map(id => `${nm(id)} [${codeStr(IDX.p.get(id))}]`).join('  =  '));
+  if (!confirm(`Ditemukan ${list.length} orang yang sama berdasarkan kode unik:\n\n${lines.join('\n')}${list.length > 8 ? '\n• …' : ''}\n\nGabungkan otomatis?`)) return 0;
+  let done = 0, skip = 0;
+  for (const g of list) {
+    const keep = g.find(id => before.has(id)) || g[0];
+    for (const id of g) {
+      if (id === keep || !IDX.p.has(id) || !IDX.p.has(keep)) continue;
+      if (mergeForbidden(keep).has(id)) { skip++; continue; }
+      if (await doMerge(keep, id, true)) done++;
+    }
+  }
+  if (skip) toast(`${done} orang digabung, ${skip} dilewati (hubungan keluarganya tidak memungkinkan; gabungkan manual).`, true);
+  return done;
+}
+
+/* ---------- Hapus orang ---------- */
+async function deletePerson(id) {
+  const p = IDX.p.get(id); if (!p) return;
+  if (!confirm(`Hapus "${p.nama}" dari silsilah?\nAnak-anaknya tidak ikut terhapus.`)) return;
+  const ops = [];
+  (IDX.marr.get(id) || []).forEach(m => {
+    const other = m.p1 === id ? m.p2 : m.p1, ks = IDX.kids.get(m.id) || [];
+    if (other && ks.length) ops.push({ op: 'upsert', t: 'nikah', row: { ...m, p1: other, p2: '' } }); // anak tetap terhubung ke pasangan yang tersisa
+    else { ks.forEach(k => ops.push({ op: 'upsert', t: 'orang', row: { ...k, parent_nikah_id: '' } })); ops.push({ op: 'delete', t: 'nikah', id: m.id }); }
+  });
+  // Jika orang ini satu-satunya anak dari pernikahan "pasangan tidak tercatat", hapus pernikahan kosong itu agar tidak tersisa titik/garis
+  const pm = IDX.m.get(p.parent_nikah_id);
+  if (pm && !pm.p2 && !(IDX.kids.get(pm.id) || []).some(k => k.id !== id)) ops.push({ op: 'delete', t: 'nikah', id: pm.id });
+  ops.push({ op: 'delete', t: 'orang', id });
+  try {
+    await commit(ops);
+    if (state.mode === 'remote' && p.foto) api('deletePhoto', { url: p.foto }).catch(() => {});
+    closeModal(); toast('Dihapus');
+  } catch (e) { /* toast sudah tampil */ }
+}
+
+/* ---------- Tombol umum ---------- */
+$('#add-person').onclick = () => personForm();
+$('#empty-add').onclick = () => personForm();
+$('#empty-seed').onclick = async () => {
+  const P = (id, nama, gender, lahir, wafat, par) => ({ op: 'upsert', t: 'orang', row: { id, nama, gender, lahir, wafat: wafat || '', tempat: '', catatan: '', foto: '', parent_nikah_id: par || '' } });
+  const M = (id, p1, p2, tahun, status) => ({ op: 'upsert', t: 'nikah', row: { id, p1, p2, tahun, status, catatan: '' } });
+  await commit([
+    P('d1', 'Budi Santoso', 'L', '1930', '2008'), P('d2', 'Siti Aminah', 'P', '1934', '1968'), P('d3', 'Lestari', 'P', '1940'),
+    M('dm1', 'd1', 'd2', '1954', 'wafat'), M('dm2', 'd1', 'd3', '1970', 'menikah'),
+    P('d4', 'Andi Santoso', 'L', '1956', '', 'dm1'), P('d5', 'Rina Santoso', 'P', '1959', '', 'dm1'), P('d6', 'Dewi Santoso', 'P', '1972', '', 'dm2'),
+    P('d7', 'Maya', 'P', '1960'), P('d8', 'Dian', 'P', '1975'), P('d9', 'Hendra', 'L', '1957'),
+    M('dm3', 'd4', 'd7', '1983', 'cerai'), M('dm4', 'd4', 'd8', '1998', 'menikah'), M('dm5', 'd5', 'd9', '1982', 'menikah'),
+    P('d10', 'Raka', 'L', '1985', '', 'dm3'), P('d11', 'Nisa', 'P', '1988', '', 'dm3'), P('d12', 'Bagas', 'L', '2001', '', 'dm4'), P('d13', 'Salsa', 'P', '1984', '', 'dm5')
+  ]);
+  state.fit = true; render();
+};
+
+/* ---------- Mulai ---------- */
+(function init() {
+  document.title = CONFIG.TITLE;
+  $('#login-title').textContent = CONFIG.TITLE; $('#app-title').textContent = CONFIG.TITLE;
+  if (!CONFIG.SCRIPT_URL) { $('#demo-note').hidden = false; return; }
+  const saved = ss.get('ft_pw');
+  if (saved) loginRemote(saved).catch(() => ss.del('ft_pw'));
+})();
+</script>
+</body>
+</html>
